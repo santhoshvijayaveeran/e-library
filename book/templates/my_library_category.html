@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ category_name }} - My Library{% endblock %}
+
+{% block content %}
+<div class="my-library-category-page" style="max-width: 1300px; margin: 0 auto; padding: 40px 20px;">
+
+    <a href="{% url 'my_library' %}" style="text-decoration:none; color:#666; font-size:14px;">← Back to My Library</a>
+
+    <h1 style="margin: 12px 0 4px;">{{ category_name }}</h1>
+    <p style="color:#666; margin-bottom:32px;">{{ book_count }} book{{ book_count|pluralize }}</p>
+
+    {% if cards %}
+    <div class="book-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap:20px;">
+        {% for card in cards %}
+        <div class="book-card" id="book-card-{{ card.obj.id }}" style="position:relative;">
+            <a href="{% url 'book_detail' card.obj.id %}" style="text-decoration:none; color:inherit;">
+                <div class="book-cover {{ card.cover_class }}" style="border-radius:8px; overflow:hidden; aspect-ratio:2/3;">
+                    {% if card.obj.cover_image %}
+                        <img src="{{ card.obj.cover_image.url }}" alt="{{ card.obj.title }}" style="width:100%; height:100%; object-fit:cover;">
+                    {% else %}
+                        <div style="display:flex; align-items:center; justify-content:center; height:100%; color:#fff; font-weight:600; text-align:center; padding:10px;">
+                            {{ card.obj.title }}
+                        </div>
+                    {% endif %}
+                </div>
+                <p style="margin:8px 0 2px; font-weight:600; font-size:14px;">{{ card.obj.title }}</p>
+                <p style="margin:0; font-size:12px; color:#888;">{{ card.obj.author }}</p>
+            </a>
+
+            {% if card.is_purchased %}
+            <span style="position:absolute; top:8px; right:8px; background:#c9a227; color:#fff; font-size:11px; padding:2px 8px; border-radius:12px;">
+                Owned
+            </span>
+            {% else %}
+            <button
+                class="remove-from-library-btn"
+                data-book-id="{{ card.obj.id }}"
+                style="margin-top:8px; width:100%; padding:6px; font-size:12px; border:1px solid #e11d48; color:#e11d48; background:#fff; border-radius:6px; cursor:pointer;">
+                Remove
+            </button>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p style="color:#999;">Idha category-la books illa.</p>
+    {% endif %}
+</div>
+
+<script>
+document.addEventListener('click', function (e) {
+    const btn = e.target.closest('.remove-from-library-btn');
+    if (!btn) return;
+
+    const bookId = btn.dataset.bookId;
+    const csrftoken = document.cookie.split('; ').find(row => row.startsWith('csrftoken='))?.split('=')[1];
+
+    fetch(`/my-library/toggle/${bookId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrftoken,
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success && !data.added) {
+            const card = document.getElementById(`book-card-${bookId}`);
+            if (card) card.remove();
+        }
+    })
+    .catch(err => console.error('Remove failed:', err));
+});
+</script>
+{% endblock %}

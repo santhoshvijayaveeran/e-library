@@ -1,0 +1,479 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Author Panel — Sanza Library{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['Plus Jakarta Sans', 'Inter', 'sans-serif'],
+          display: ['Playfair Display', 'serif'],
+        },
+        colors: {
+          primary: '#3B82F6', 'primary-hover': '#2563EB', bg: '#F8FAFC', card: '#FFFFFF',
+          border: '#E5E7EB', ink: '#0F172A', muted: '#64748B', success: '#22C55E',
+          danger: '#EF4444', warning: '#F59E0B', purple: '#8B5CF6', green: '#10B981', orange: '#FB923C',
+        },
+        boxShadow: {
+          soft: '0 10px 35px rgba(15,23,42,0.06)', softer: '0 4px 16px rgba(15,23,42,0.04)', lift: '0 20px 45px rgba(15,23,42,0.10)',
+        },
+        borderRadius: { xl2: '20px', xl3: '24px' },
+      }
+    }
+  }
+</script>
+{% endblock %}
+
+{% block extra_css %}
+#author-panel-root{ font-family:'Plus Jakarta Sans','Inter',sans-serif; }
+#author-panel-root .input-field{ height:52px; border-radius:14px; border:1.5px solid #E5E7EB; background:#fff; padding:0 16px; font-size:.925rem; color:#0F172A; outline:none; transition:border-color .2s ease, box-shadow .2s ease; width:100%; }
+#author-panel-root .input-field::placeholder{ color:#94A3B8; }
+#author-panel-root .input-field:focus{ border-color:#3B82F6; box-shadow:0 0 0 4px rgba(59,130,246,.12); }
+#author-panel-root .file-field{ border-radius:14px; border:1.5px dashed #CBD5E1; background:#F8FAFC; padding:12px 16px; display:flex; align-items:center; gap:10px; cursor:pointer; transition:all .2s ease; position:relative; }
+#author-panel-root .file-field:hover{ border-color:#3B82F6; background:#EFF6FF; }
+#author-panel-root .file-field input[type=file]{ position:absolute; inset:0; opacity:0; cursor:pointer; }
+#author-panel-root .stat-card{ transition:transform .3s cubic-bezier(.22,1,.36,1), box-shadow .3s ease; }
+#author-panel-root .stat-card:hover{ transform:translateY(-4px); box-shadow:0 20px 45px rgba(15,23,42,.10); }
+#author-panel-root .btn-primary{ background:linear-gradient(135deg,#3B82F6 0%,#2563EB 100%); transition:transform .18s ease, box-shadow .18s ease; box-shadow:0 8px 20px rgba(37,99,235,.28); }
+#author-panel-root .btn-primary:hover{ transform:scale(1.02); box-shadow:0 10px 26px rgba(37,99,235,.36); }
+#author-panel-root .sidebar-link{ position:relative; transition:background .2s ease, color .2s ease; }
+#author-panel-root .sidebar-link:hover{ background:#F1F5F9; }
+#author-panel-root .sidebar-link.active{ background:linear-gradient(135deg,#EFF6FF 0%,#E0EDFF 100%); color:#2563EB; font-weight:700; }
+#author-panel-root .sidebar-link.active::before{ content:''; position:absolute; left:-12px; top:50%; transform:translateY(-50%); width:4px; height:60%; border-radius:4px; background:#3B82F6; }
+#author-panel-root .table-row{ transition:background .2s ease; }
+#author-panel-root .table-row:hover{ background:#F8FAFC; }
+#author-panel-root .icon-btn{ transition:transform .15s ease, background .2s ease; }
+#author-panel-root .icon-btn:hover{ transform:translateY(-1px); }
+#author-panel-root .pill-free{ background:linear-gradient(135deg,#DCFCE7 0%,#D1FAE5 100%); color:#16A34A; }
+#author-panel-root .pill-paid{ background:#EFF6FF; color:#2563EB; }
+#author-panel-root .fade-panel{ animation:amgmtFadeIn .25s ease; }
+@keyframes amgmtFadeIn{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
+#author-panel-root .amgmt-edit-banner{ display:none; }
+#author-panel-root .amgmt-edit-banner.show{ display:flex; }
+#author-panel-root .amgmt-price-fields{ display:none; }
+#author-panel-root .amgmt-price-fields.show{ display:grid; }
+{% endblock %}
+
+{% block content %}
+<div id="author-panel-root" class="max-w-[1600px] mx-auto flex items-start gap-8 px-10 py-10">
+
+  <!-- SIDEBAR -->
+  <aside class="hidden md:flex flex-col gap-6 sticky top-[112px]" style="width:260px;">
+    <nav class="bg-white rounded-xl2 shadow-soft p-4 flex flex-col gap-1.5">
+      <div data-panel="books-panel" class="sidebar-link active flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer text-[15px] text-slate-600">
+        <i data-lucide="book-marked" class="w-[18px] h-[18px]"></i> My Books
+      </div>
+      <div data-panel="reviews-panel" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer text-[15px] text-slate-600">
+        <i data-lucide="star" class="w-[18px] h-[18px]"></i> Reviews
+      </div>
+      <div data-panel="profile-panel" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer text-[15px] text-slate-600">
+        <i data-lucide="user" class="w-[18px] h-[18px]"></i> Profile
+      </div>
+    </nav>
+
+    <div class="rounded-xl2 p-6 text-white relative overflow-hidden" style="background:linear-gradient(160deg,#3B82F6 0%,#2563EB 55%,#1D4ED8 100%);">
+      <div class="absolute -right-6 -top-8 w-28 h-28 rounded-full bg-white/10"></div>
+      <div class="absolute -right-2 bottom-4 w-16 h-16 rounded-full bg-white/10"></div>
+      <i data-lucide="feather" class="w-7 h-7 mb-4 text-white/90"></i>
+      <h4 class="font-display font-bold text-lg leading-snug mb-2 relative z-10">Share your knowledge with the world.</h4>
+      <p class="text-[13px] text-blue-100 leading-relaxed mb-5 relative z-10">Upload your books and inspire millions of readers.</p>
+      <button type="button" class="relative z-10 w-full bg-white text-primary font-semibold text-sm py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-blue-50 transition-colors"
+              onclick="document.getElementById('book-title').focus(); document.querySelector('#author-panel-root [data-panel=books-panel]').click();">
+        <i data-lucide="plus-circle" class="w-4 h-4"></i> Add New Book
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="flex-1 min-w-0">
+
+    {% if messages %}
+      {% for message in messages %}
+        <div class="bg-white rounded-xl2 shadow-soft p-4 mb-4 border-l-4 border-primary text-sm">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+
+    <!-- STATS -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-9">
+      <div class="stat-card bg-white rounded-xl2 shadow-soft p-6 flex items-center gap-4" style="height:110px;">
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0" style="background:linear-gradient(135deg,#DBEAFE,#EFF6FF);">
+          <i data-lucide="book" class="w-5 h-5 text-primary"></i>
+        </div>
+        <div><div class="font-display font-extrabold text-3xl text-ink leading-none">{{ book_count }}</div><div class="text-[13px] text-muted mt-1.5">My Books</div></div>
+      </div>
+      <div class="stat-card bg-white rounded-xl2 shadow-soft p-6 flex items-center gap-4" style="height:110px;">
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0" style="background:linear-gradient(135deg,#EDE9FE,#F5F3FF);">
+          <i data-lucide="star" class="w-5 h-5 text-purple"></i>
+        </div>
+        <div><div class="font-display font-extrabold text-3xl text-ink leading-none">{{ review_count }}</div><div class="text-[13px] text-muted mt-1.5">Reviews Received</div></div>
+      </div>
+      <div class="stat-card bg-white rounded-xl2 shadow-soft p-6 flex items-center gap-4" style="height:110px;">
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0" style="background:linear-gradient(135deg,#D1FAE5,#ECFDF5);">
+          <i data-lucide="download" class="w-5 h-5 text-green"></i>
+        </div>
+        <div><div class="font-display font-extrabold text-3xl text-ink leading-none">{{ total_downloads|default:0 }}</div><div class="text-[13px] text-muted mt-1.5">Total Downloads</div></div>
+      </div>
+      <div class="stat-card bg-white rounded-xl2 shadow-soft p-6 flex items-center gap-4" style="height:110px;">
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0" style="background:linear-gradient(135deg,#FFEDD5,#FFF7ED);">
+          <i data-lucide="wallet" class="w-5 h-5 text-orange"></i>
+        </div>
+        <div><div class="font-display font-extrabold text-3xl text-ink leading-none">₹{{ total_earnings|default:0 }}</div><div class="text-[13px] text-muted mt-1.5">Total Earnings</div></div>
+      </div>
+    </div>
+
+    <!-- BOOKS PANEL -->
+    <section id="books-panel" class="author-section fade-panel">
+      <div class="flex items-start justify-between mb-9">
+        <div>
+          <div class="text-[12px] font-bold tracking-[2px] uppercase text-primary mb-2">Catalogue</div>
+          <h1 class="font-display font-extrabold text-4xl md:text-5xl text-ink mb-3">My Books</h1>
+          <p class="text-muted text-[15px] max-w-md leading-relaxed">Add new titles under your name. You can only edit books you added.</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-[30px] items-start">
+
+        <!-- ADD/EDIT BOOK FORM -->
+        <div class="bg-white rounded-xl3 shadow-soft p-8">
+          <div id="book-edit-banner" class="amgmt-edit-banner items-center justify-between gap-3 bg-blue-50 text-primary-hover border border-blue-200 rounded-xl px-4 py-3 text-sm font-semibold mb-5">
+            <span>Editing an existing book</span>
+            <button type="button" id="book-cancel-edit-inline" class="underline text-xs font-bold">Cancel edit</button>
+          </div>
+
+          <div class="flex items-center gap-3 mb-7">
+            <div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
+              <i data-lucide="clipboard-list" class="w-5 h-5 text-primary"></i>
+            </div>
+            <h3 id="book-form-heading" class="font-display font-bold text-xl text-ink">Add a Book</h3>
+          </div>
+
+          <form id="book-form" method="post" enctype="multipart/form-data" action="{% url 'author_add_book' %}" class="flex flex-col gap-5">
+            {% csrf_token %}
+            <input type="hidden" name="pricing_type" id="pricing-type-hidden" value="Free">
+
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-2">Title *</label>
+              <input type="text" name="title" id="book-title" placeholder="e.g. The Silent Patient" class="input-field" required>
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-2">Author *</label>
+              <input type="text" name="author" id="book-author" placeholder="e.g. Alex Michaelides" class="input-field" required>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-2">Category *</label>
+                <select name="category" id="book-category" class="input-field" required>
+                  <option value="">Select category</option>
+                  {% for cat in categories %}
+                    <option value="{{ cat.id }}">{{ cat.name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-2">ISBN</label>
+                <input type="text" name="isbn" id="book-isbn" placeholder="978-0-123456-78-9" class="input-field">
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-2">Description</label>
+              <textarea name="description" id="book-description" rows="3" placeholder="Short description of the book" class="input-field" style="height:auto; padding:12px 16px;"></textarea>
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-2">Status</label>
+              <select name="status" id="book-status" class="input-field">
+                <option value="Available">Available</option>
+                <option value="Unavailable">Unavailable</option>
+              </select>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-2">Cover Image</label>
+                <label class="file-field" for="book-image">
+                  <input type="file" name="cover_image" id="book-image" accept="image/*" onchange="updateFileName(this,'book-image-name')">
+                  <i data-lucide="upload-cloud" class="w-4 h-4 text-primary shrink-0"></i>
+                  <span class="text-sm">
+                    <span class="text-primary font-semibold">Choose File</span>
+                    <div class="text-[11px] text-muted" id="book-image-name">No file chosen</div>
+                  </span>
+                </label>
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-2">Book PDF</label>
+                <label class="file-field" for="book-pdf">
+                  <input type="file" name="pdf_file" id="book-pdf" accept="application/pdf" onchange="updateFileName(this,'book-pdf-name')">
+                  <i data-lucide="upload-cloud" class="w-4 h-4 text-primary shrink-0"></i>
+                  <span class="text-sm">
+                    <span class="text-primary font-semibold">Choose File</span>
+                    <div class="text-[11px] text-muted" id="book-pdf-name">No file chosen</div>
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-2">Pricing</label>
+              <div class="grid grid-cols-2 gap-4">
+                <div class="flex items-center gap-2 input-field !px-4">
+                  <span class="text-muted text-sm">₹</span>
+                  <input type="number" name="price" id="book-price" min="0" step="0.01" placeholder="0.00" class="bg-transparent outline-none text-sm w-full">
+                </div>
+                <select id="pricing-type-select" class="input-field" onchange="setPricing(this.value)">
+                  <option value="Free">Free</option>
+                  <option value="Paid">Paid</option>
+                </select>
+              </div>
+              <div class="amgmt-price-fields grid-cols-2 gap-4 mt-4" id="price-fields">
+                <div>
+                  <label class="block text-sm font-semibold text-slate-700 mb-2">Discount (₹)</label>
+                  <input type="number" name="discount" id="book-discount" min="0" step="0.01" class="input-field">
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-5 mt-2">
+              <button type="submit" id="book-submit-btn" class="btn-primary text-white font-semibold text-sm rounded-xl flex items-center justify-center gap-2 flex-1" style="height:52px;">
+                <i data-lucide="plus-circle" class="w-4 h-4"></i> Add Book
+              </button>
+              <button type="reset" class="text-sm font-semibold text-muted hover:text-ink transition-colors">Clear</button>
+              <button type="button" id="book-cancel-edit" class="text-sm font-semibold text-muted hover:text-ink transition-colors" style="display:none;">Cancel edit</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- CATALOGUE TABLE -->
+        <div class="bg-white rounded-xl3 shadow-soft p-8">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
+              <i data-lucide="file-text" class="w-5 h-5 text-primary"></i>
+            </div>
+            <h3 class="font-display font-bold text-xl text-ink">My Catalogue ({{ book_count }})</h3>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full border-collapse">
+              <thead>
+                <tr class="text-left">
+                  <th class="text-[11px] uppercase tracking-wider text-muted font-bold pb-3 border-b border-border">Title</th>
+                  <th class="text-[11px] uppercase tracking-wider text-muted font-bold pb-3 border-b border-border">Category</th>
+                  <th class="text-[11px] uppercase tracking-wider text-muted font-bold pb-3 border-b border-border">Price</th>
+                  <th class="text-[11px] uppercase tracking-wider text-muted font-bold pb-3 border-b border-border">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for book in my_books %}
+                <tr class="table-row">
+                  <td class="py-4 border-b border-slate-100 align-middle">
+                    <div class="flex items-center gap-3">
+                      {% if book.cover_image %}
+                        <img src="{{ book.cover_image.url }}" class="w-10 h-14 rounded-md shrink-0 object-cover" alt="">
+                      {% else %}
+                        <div class="w-10 h-14 rounded-md shrink-0 bg-slate-100"></div>
+                      {% endif %}
+                      <div>
+                        <div class="font-bold text-ink text-sm">{{ book.title }}</div>
+                        {% if book.isbn %}<div class="text-[12px] text-slate-400 mt-0.5">{{ book.isbn }}</div>{% endif %}
+                      </div>
+                    </div>
+                  </td>
+                  <td class="py-4 border-b border-slate-100 text-[13px] text-slate-600 align-middle">{{ book.category.name|default:"—" }}</td>
+                  <td class="py-4 border-b border-slate-100 align-middle">
+                    {% if book.is_paid %}
+                      <span class="pill-paid text-[12px] font-bold px-3 py-1.5 rounded-full">₹{{ book.final_price }}</span>
+                    {% else %}
+                      <span class="pill-free text-[12px] font-bold px-3 py-1.5 rounded-full">Free</span>
+                    {% endif %}
+                  </td>
+                  <td class="py-4 border-b border-slate-100 align-middle">
+                    <div class="flex items-center gap-2">
+                      <button type="button" class="icon-btn flex items-center gap-1.5 text-xs font-semibold text-primary border border-blue-200 bg-blue-50 px-3 py-2 rounded-lg hover:bg-blue-100 book-edit-btn"
+                              data-id="{{ book.id }}"
+                              data-title="{{ book.title|escapejs }}"
+                              data-author="{{ book.author|default:''|escapejs }}"
+                              data-description="{{ book.description|default:''|escapejs }}"
+                              data-status="{{ book.status|default:'Available' }}"
+                              data-category="{{ book.category_id }}"
+                              data-isbn="{{ book.isbn|default:''|escapejs }}"
+                              data-ispaid="{{ book.is_paid|yesno:'true,false' }}"
+                              data-price="{{ book.price|default:0|stringformat:'s' }}"
+                              data-discount="{{ book.discount|default:0|stringformat:'s' }}">
+                        <i data-lucide="pencil" class="w-3.5 h-3.5"></i> Edit
+                      </button>
+                      <form method="post" action="{% url 'author_delete_book' book.id %}" style="display:inline;" onsubmit="return confirm('Remove &quot;{{ book.title|escapejs }}&quot;?');">
+                        {% csrf_token %}
+                        <button type="submit" class="icon-btn flex items-center gap-1.5 text-xs font-semibold text-danger border border-red-200 bg-red-50 px-3 py-2 rounded-lg hover:bg-red-100">
+                          <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Remove
+                        </button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="py-10 text-center text-muted italic">No books yet — add your first title on the left.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          {% if my_books.has_other_pages %}
+          <div class="flex items-center justify-center gap-2 mt-8">
+            {% if my_books.has_previous %}
+              <a href="?page={{ my_books.previous_page_number }}" class="w-9 h-9 rounded-lg border border-border flex items-center justify-center text-muted hover:bg-slate-50 transition-colors"><i data-lucide="chevron-left" class="w-4 h-4"></i></a>
+            {% else %}
+              <span class="w-9 h-9 rounded-lg border border-border flex items-center justify-center text-muted opacity-40"><i data-lucide="chevron-left" class="w-4 h-4"></i></span>
+            {% endif %}
+            {% for num in my_books.paginator.page_range %}
+              {% if num == my_books.number %}
+                <span class="w-9 h-9 rounded-lg bg-primary text-white font-bold text-sm flex items-center justify-center">{{ num }}</span>
+              {% else %}
+                <a href="?page={{ num }}" class="w-9 h-9 rounded-lg border border-border flex items-center justify-center text-muted hover:bg-slate-50 transition-colors text-sm">{{ num }}</a>
+              {% endif %}
+            {% endfor %}
+            {% if my_books.has_next %}
+              <a href="?page={{ my_books.next_page_number }}" class="w-9 h-9 rounded-lg border border-border flex items-center justify-center text-muted hover:bg-slate-50 transition-colors"><i data-lucide="chevron-right" class="w-4 h-4"></i></a>
+            {% else %}
+              <span class="w-9 h-9 rounded-lg border border-border flex items-center justify-center text-muted opacity-40"><i data-lucide="chevron-right" class="w-4 h-4"></i></span>
+            {% endif %}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </section>
+
+    <!-- REVIEWS PANEL -->
+    <section id="reviews-panel" class="author-section hidden fade-panel">
+      <div class="mb-9">
+        <div class="text-[12px] font-bold tracking-[2px] uppercase text-primary mb-2">Feedback</div>
+        <h1 class="font-display font-extrabold text-4xl md:text-5xl text-ink mb-3">Reviews on my books</h1>
+        <p class="text-muted text-[15px] max-w-md leading-relaxed">What readers are saying about the books you've added.</p>
+      </div>
+      <div class="bg-white rounded-xl3 shadow-soft p-8">
+        {% for review in my_reviews %}
+          <div class="py-4 border-b border-slate-100 last:border-b-0">
+            <div class="font-bold text-ink text-sm">{{ review.book.title }}</div>
+            <div class="text-[12px] text-muted mt-0.5 mb-1.5">
+              {{ review.user.first_name|default:review.user.username }} ·
+              {% for i in "12345" %}<span class="{% if forloop.counter <= review.rating %}text-yellow-400{% else %}text-slate-200{% endif %}">&#9733;</span>{% endfor %}
+            </div>
+            <div class="text-sm text-slate-600 leading-relaxed">{{ review.comment }}</div>
+          </div>
+        {% empty %}
+          <p class="text-center text-muted italic py-10">No reviews yet.</p>
+        {% endfor %}
+      </div>
+    </section>
+
+    <!-- PROFILE PANEL -->
+    <section id="profile-panel" class="author-section hidden fade-panel">
+      <div class="mb-9">
+        <div class="text-[12px] font-bold tracking-[2px] uppercase text-primary mb-2">Account</div>
+        <h1 class="font-display font-extrabold text-4xl md:text-5xl text-ink mb-3">My Profile</h1>
+      </div>
+      <div class="bg-white rounded-xl3 shadow-soft p-8 max-w-md">
+        <div class="flex flex-col gap-4 text-sm">
+          <p><span class="font-bold text-ink">Name:</span> <span class="text-muted">{{ user_name }}</span></p>
+          <p><span class="font-bold text-ink">Email:</span> <span class="text-muted">{{ user_email }}</span></p>
+          <p><span class="font-bold text-ink">Role:</span> <span class="text-muted">Author — can add/edit own books</span></p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+  lucide.createIcons();
+
+  const authorRoot = document.getElementById('author-panel-root');
+  const sidebarLinks = authorRoot.querySelectorAll('[data-panel]');
+  const panels = authorRoot.querySelectorAll('.author-section');
+  sidebarLinks.forEach(link => {
+    link.addEventListener('click', () => {
+      sidebarLinks.forEach(l => l.classList.remove('active'));
+      panels.forEach(p => p.classList.add('hidden'));
+      link.classList.add('active');
+      document.getElementById(link.dataset.panel).classList.remove('hidden');
+    });
+  });
+
+  function updateFileName(input, targetId){
+    const label = input.files && input.files.length ? input.files[0].name : 'No file chosen';
+    document.getElementById(targetId).textContent = label;
+  }
+
+  const priceFields = document.getElementById('price-fields');
+  const pricingHidden = document.getElementById('pricing-type-hidden');
+  const pricingSelect = document.getElementById('pricing-type-select');
+  function setPricing(type){
+    pricingHidden.value = type;
+    pricingSelect.value = type;
+    if(type === 'Free'){ priceFields.classList.remove('show'); }
+    else { priceFields.classList.add('show'); }
+  }
+
+  const bookForm = document.getElementById('book-form');
+  const originalAction = bookForm.action;
+
+  function editBook(id, title, author, description, status, categoryId, isbn, isPaid, price, discount){
+    document.getElementById('book-title').value = title;
+    document.getElementById('book-author').value = author;
+    document.getElementById('book-description').value = description;
+    document.getElementById('book-status').value = status;
+    document.getElementById('book-category').value = categoryId;
+    document.getElementById('book-isbn').value = isbn;
+    setPricing(isPaid ? 'Paid' : 'Free');
+    document.getElementById('book-price').value = price || '';
+    document.getElementById('book-discount').value = discount || '';
+    bookForm.action = `/management/author/book/${id}/edit/`;
+    document.getElementById('book-form-heading').textContent = 'Edit book';
+    document.getElementById('book-submit-btn').innerHTML = '<i data-lucide="check-circle" class="w-4 h-4"></i> Update Book';
+    document.getElementById('book-edit-banner').classList.add('show');
+    document.getElementById('book-cancel-edit').style.display = 'inline-flex';
+    lucide.createIcons();
+    document.querySelector('#books-panel .bg-white').scrollIntoView({behavior:'smooth', block:'start'});
+  }
+
+  function cancelBookEdit(){
+    bookForm.reset();
+    bookForm.action = originalAction;
+    setPricing('Free');
+    document.getElementById('book-image-name').textContent = 'No file chosen';
+    document.getElementById('book-pdf-name').textContent = 'No file chosen';
+    document.getElementById('book-form-heading').textContent = 'Add a Book';
+    document.getElementById('book-submit-btn').innerHTML = '<i data-lucide="plus-circle" class="w-4 h-4"></i> Add Book';
+    document.getElementById('book-edit-banner').classList.remove('show');
+    document.getElementById('book-cancel-edit').style.display = 'none';
+    lucide.createIcons();
+  }
+  document.getElementById('book-cancel-edit').addEventListener('click', cancelBookEdit);
+  document.getElementById('book-cancel-edit-inline').addEventListener('click', cancelBookEdit);
+
+  authorRoot.querySelectorAll('.book-edit-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      const id = this.dataset.id;
+      const title = this.dataset.title;
+      const author = this.dataset.author;
+      const description = this.dataset.description;
+      const status = this.dataset.status;
+      const categoryId = this.dataset.category;
+      const isbn = this.dataset.isbn;
+      const isPaid = this.dataset.ispaid === 'true';
+      const price = this.dataset.price;
+      const discount = this.dataset.discount;
+      editBook(id, title, author, description, status, categoryId, isbn, isPaid, price, discount);
+    });
+  });
+</script>
+{% endblock %}

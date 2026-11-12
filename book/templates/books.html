@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<style>
+.books-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 20px;
+}
+
+.books-container h1 {
+    font-size: 28px;
+    color: #1a1a2e;
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.books-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 24px;
+}
+
+.book-card {
+    background: #ffffff;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    display: block;
+    text-decoration: none;
+    color: inherit;
+}
+
+.book-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+}
+
+.book-card img {
+    width: 100%;
+    height: 260px;
+    object-fit: cover;
+    background: #f0f0f0;
+    display: block;
+}
+
+.book-card-body {
+    padding: 14px 16px;
+}
+
+.book-card-body h5 {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1a1a2e;
+    margin: 0 0 6px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.book-card-body p {
+    font-size: 13px;
+    color: #666;
+    margin: 0;
+}
+
+.no-books {
+    text-align: center;
+    color: #999;
+    font-size: 16px;
+    padding: 60px 0;
+    grid-column: 1 / -1;
+}
+</style>
+
+<div class="books-container">
+  <h1>All Books</h1>
+  <div class="books-grid">
+{% for book in books %}
+      <a href="{% url 'book_detail' book.id %}" class="book-card">
+{% if book.cover_image %}
+          <img src="{{ book.cover_image.url }}" alt="{{ book.title }}">
+{% else %}
+          <img src="https://via.placeholder.com/200x260?text=No+Cover" alt="No cover">
+{% endif %}
+        <div class="book-card-body">
+          <h5>{{ book.title }}</h5>
+          <p>{{ book.author }}</p>
+        </div>
+      </a>
+{% empty %}
+      <p class="no-books">No books available.</p>
+{% endfor %}
+  </div>
+</div>
+{% endblock %}

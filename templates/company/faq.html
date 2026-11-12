@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}FAQ - Sanza Library{% endblock %}
+{% block content %}
+<section class="section" style="padding-top:32px;">
+    <div class="section-head">
+        <div>
+            <h2><i class="fa-solid fa-circle-question"></i> Frequently Asked Questions</h2>
+            <p style="color:#888; font-size:13px; margin-top:4px;">Everything you need to know about Sanza Library.</p>
+        </div>
+        <a href="{% url 'home' %}" style="color:#6c5ce7; text-decoration:none; font-weight:600;">
+            <i class="fa-solid fa-chevron-left"></i> Back to Home
+        </a>
+    </div>
+
+    <div class="faq-wrap">
+        <p class="faq-cat">Getting Started</p>
+        <details class="faq-item" open>
+            <summary>How do I create an account?</summary>
+            <div class="faq-answer">Click "Sign Up" from the homepage, enter your name, email, and password, and you're ready to start borrowing books right away.</div>
+        </details>
+        <details class="faq-item">
+            <summary>Is Sanza Library free to use?</summary>
+            <div class="faq-answer">Yes, browsing the catalog and borrowing digital books is completely free for registered members.</div>
+        </details>
+
+        <p class="faq-cat">Borrowing Books</p>
+        <details class="faq-item">
+            <summary>How many books can I borrow at once?</summary>
+            <div class="faq-answer">You can have up to 5 books checked out at a time. Return or finish a title to free up a slot for another.</div>
+        </details>
+        <details class="faq-item">
+            <summary>How long can I keep a borrowed book?</summary>
+            <div class="faq-answer">Most titles are borrowed for 14 days. You can see the exact due date for each book under "My Library."</div>
+        </details>
+        <details class="faq-item">
+            <summary>What happens if I don't return a book on time?</summary>
+            <div class="faq-answer">Your account will be temporarily restricted from borrowing new titles until the overdue book is returned.</div>
+        </details>
+
+        <p class="faq-cat">Account & Privacy</p>
+        <details class="faq-item">
+            <summary>Can I change my email or password?</summary>
+            <div class="faq-answer">Yes, head to your profile settings to update your email address or password at any time.</div>
+        </details>
+        <details class="faq-item">
+            <summary>How is my personal information used?</summary>
+            <div class="faq-answer">We only use your information to run your account and improve recommendations. See our Privacy Policy for full details.</div>
+        </details>
+
+        <p class="faq-cat">Support</p>
+        <details class="faq-item">
+            <summary>I found an issue with a book listing. Who do I tell?</summary>
+            <div class="faq-answer">Email us at support@sanzalibrary.com with the book title and a description of the issue, and we'll take a look.</div>
+        </details>
+
+        <div class="faq-contact">
+            <h4>Still have questions?</h4>
+            We're happy to help. Reach out anytime at <a href="mailto:support@sanzalibrary.com">support@sanzalibrary.com</a>.
+        </div>
+    </div>
+</section>
+
+<style>
+    .faq-wrap{max-width:760px; margin-top:24px;}
+    .faq-cat{font-size:12px; font-weight:700; letter-spacing:.05em; color:#6c5ce7; text-transform:uppercase; margin:28px 0 12px;}
+    .faq-cat:first-child{margin-top:0;}
+    .faq-item{background:#fff; border:1px solid #eee; border-radius:10px; margin-bottom:10px; overflow:hidden;}
+    .faq-item summary{list-style:none; cursor:pointer; padding:16px 20px; font-weight:600; font-size:14.5px; display:flex; justify-content:space-between; align-items:center;}
+    .faq-item summary::-webkit-details-marker{display:none;}
+    .faq-item summary::after{content:"+"; font-size:18px; color:#6c5ce7; font-weight:400;}
+    .faq-item[open] summary::after{content:"\2013";}
+    .faq-item[open] summary{border-bottom:1px solid #eee;}
+    .faq-answer{padding:14px 20px 18px; font-size:13.5px; color:#555; line-height:1.6;}
+    .faq-contact{background:#fdf1e2; border-radius:12px; padding:24px; text-align:center; font-size:14px; color:#4a3a1c; margin-top:36px;}
+    .faq-contact h4{color:#333; margin-bottom:6px; font-size:16px;}
+    .faq-contact a{color:#6c5ce7; font-weight:600; text-decoration:none;}
+</style>
+{% endblock %}

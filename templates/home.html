@@ -1,0 +1,990 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Sanza Library - Home{% endblock %}
+
+{% block nav_home_active %}active{% endblock %}
+
+{% block extra_css %}
+/* ================= Hero Carousel ================= */
+.hero-carousel{
+    position:relative;
+    width:100%;
+    height:340px;
+    overflow:hidden;
+    font-family:'Poppins',sans-serif;
+}
+
+.hero-slides{
+    display:flex;
+    width:100%;
+    height:100%;
+    transition:transform .8s ease-in-out;
+}
+
+.hero-slide{
+    min-width:100%;
+    height:100%;
+    display:flex;
+    align-items:center;
+    padding:0 70px;
+    color:#fff;
+    background-color:#0a1642; /* fallback while bg image loads */
+}
+
+.hero-content{
+    max-width:560px;
+}
+
+.hero-content h1{
+    font-family:'Playfair Display',serif;
+    font-size:42px;
+    font-weight:700;
+    margin-bottom:14px;
+    line-height:1.2;
+}
+
+.hero-underline{
+    width:70px;
+    height:4px;
+    background:#3b82f6;
+    border-radius:2px;
+    margin-bottom:20px;
+}
+
+.hero-content p{
+    color:#c7ccdb;
+    font-size:16px;
+    line-height:1.6;
+    margin-bottom:28px;
+    max-width:480px;
+}
+
+.hero-search{
+    display:flex;
+    align-items:center;
+    background:#fff;
+    border-radius:16px;
+    padding:8px;
+    max-width:520px;
+    box-shadow:0 15px 35px rgba(0,0,0,.35);
+    margin-bottom:32px;
+    gap:8px;
+}
+
+.hero-search input{
+    flex:1;
+    border:none;
+    outline:none;
+    padding:14px 14px;
+    font-size:15px;
+    border-radius:10px;
+    color:#333;
+}
+
+.hero-search input::placeholder{ color:#9ca3af; }
+
+.hero-search button{
+    background:#2563eb;
+    color:#fff;
+    border:none;
+    padding:14px 28px;
+    border-radius:10px;
+    font-size:15px;
+    font-weight:500;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    transition:.3s;
+    white-space:nowrap;
+}
+
+.hero-search button:hover{ background:#1d4ed8; }
+
+.hero-stats{
+    display:flex;
+    align-items:center;
+    gap:0;
+}
+
+.hero-stats .stat{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:0 26px;
+    opacity:0;
+    animation:statFadeUp .6s ease forwards;
+}
+
+.hero-stats .stat:first-child{ padding-left:0; }
+.hero-stats .stat:not(:last-child){ border-right:1px solid rgba(255,255,255,.2); }
+.hero-stats .stat:nth-child(1){ animation-delay:.15s; }
+.hero-stats .stat:nth-child(2){ animation-delay:.3s; }
+.hero-stats .stat:nth-child(3){ animation-delay:.45s; }
+
+@keyframes statFadeUp{
+    from{ opacity:0; transform:translateY(14px); }
+    to{ opacity:1; transform:translateY(0); }
+}
+
+.hero-stats .stat i{
+    color:#3b82f6;
+    font-size:26px;
+    transition:transform .3s ease;
+}
+.hero-stats .stat:hover i{ transform:scale(1.15) rotate(-6deg); }
+
+.hero-stats .stat .stat-num{
+    font-size:22px;
+    font-weight:700;
+    line-height:1.1;
+    display:block;
+    color:#fff;
+}
+
+.hero-stats .stat .stat-label{
+    font-size:13px;
+    color:#c7ccdb;
+    margin-top:2px;
+}
+
+.hero-btn{
+    display:inline-block;
+    background:#2563eb;
+    color:#fff;
+    padding:13px 30px;
+    border-radius:8px;
+    text-decoration:none;
+    font-weight:600;
+    font-size:15px;
+    transition:.3s;
+}
+.hero-btn:hover{ background:#1d4ed8; }
+
+.hero-dots{
+    position:absolute;
+    bottom:22px;
+    right:40px;
+    display:flex;
+    gap:8px;
+    z-index:5;
+}
+
+.hero-dot{
+    width:10px;
+    height:10px;
+    border-radius:50%;
+    background:rgba(255,255,255,.5);
+    cursor:pointer;
+    transition:background .3s, transform .3s;
+}
+
+.hero-dot.active{
+    background:#3b82f6;
+    transform:scale(1.2);
+}
+
+/* ===== Flat illustrated hero slides ===== */
+.hero-slide.flat{
+    position:relative;
+    overflow:hidden;
+    justify-content:center;
+}
+.theme-cream{ background:#f5efe6; color:#2b2b2b; }
+.theme-navy{ background:#0d1a3d; color:#fff; }
+.theme-green{ background:#eef6ea; color:#22381f; }
+
+.flat-blob{
+    position:absolute;
+    border-radius:50%;
+    opacity:.55;
+    z-index:0;
+}
+.theme-cream .flat-blob.b1{ width:260px; height:260px; background:#e7d9c2; top:-90px; left:-60px; }
+.theme-cream .flat-blob.b2{ width:140px; height:140px; background:#e7d9c2; bottom:-50px; left:130px; opacity:.4; }
+.theme-navy .flat-blob.b1{ width:300px; height:300px; background:#16265c; top:-110px; right:100px; }
+.theme-navy .flat-blob.b2{ width:120px; height:120px; background:#16265c; bottom:-40px; left:58%; }
+.theme-green .flat-blob.b1{ width:240px; height:240px; background:#dcefd4; top:-80px; left:-40px; }
+.theme-green .flat-blob.b2{ width:150px; height:150px; background:#dcefd4; bottom:-60px; left:110px; }
+
+.flat-hero-wrap{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    width:100%;
+    max-width:1200px;
+    margin:0 auto;
+    gap:50px;
+    position:relative;
+    z-index:2;
+}
+
+.flat-text{ flex:1; max-width:520px; }
+.flat-text .eyebrow{
+    font-family:'Poppins',sans-serif;
+    font-weight:700;
+    font-size:22px;
+    line-height:1.3;
+    display:block;
+}
+.flat-text .headline{
+    font-family:'Poppins',sans-serif;
+    font-weight:800;
+    font-size:33px;
+    line-height:1.2;
+    margin-bottom:14px;
+    display:block;
+}
+.theme-cream .headline{ color:#5b3a1e; }
+.theme-navy .headline{ color:#f5a623; }
+.theme-green .headline{ color:#3f8f4a; }
+
+.flat-text p.sub{
+    font-size:15px;
+    line-height:1.5;
+    margin-bottom:22px;
+    opacity:.85;
+    max-width:440px;
+}
+
+.flat-features{
+    display:flex;
+    gap:24px;
+    margin-bottom:26px;
+    flex-wrap:wrap;
+}
+.flat-feature{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:11.5px;
+    font-weight:600;
+    letter-spacing:.4px;
+    text-transform:uppercase;
+}
+.flat-feature i{ font-size:15px; }
+.theme-cream .flat-feature i{ color:#a9702f; }
+.theme-navy .flat-feature i{ color:#f5a623; }
+.theme-green .flat-feature i{ color:#3f8f4a; }
+
+.flat-cta{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:13px 28px;
+    border-radius:30px;
+    font-weight:600;
+    font-size:14px;
+    text-decoration:none;
+    cursor:pointer;
+    border:none;
+    transition:.3s;
+}
+.theme-navy .flat-cta{ background:#f5a623; color:#1a1200; }
+.theme-navy .flat-cta:hover{ background:#e0951a; }
+.theme-green .flat-cta{ background:#3f8f4a; color:#fff; }
+.theme-green .flat-cta:hover{ background:#337a3d; }
+
+.flat-right{
+    flex:0 0 380px;
+    height:220px;
+    position:relative;
+    z-index:2;
+    display:flex;
+    align-items:flex-end;
+    justify-content:center;
+}
+
+/* Guide slide: e-reader + book spines */
+.reader-mock{
+    width:100px;
+    height:170px;
+    background:#1a1a1a;
+    border-radius:10px;
+    padding:14px 12px;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    box-shadow:0 20px 40px rgba(0,0,0,.2);
+    z-index:3;
+}
+.reader-mock .r-title{ font-size:8px; letter-spacing:1px; color:#aaa; margin-bottom:4px; }
+.reader-mock .r-line{ height:3px; background:#555; border-radius:2px; }
+.reader-mock .r-line:nth-child(odd){ width:90%; }
+.reader-mock .r-line:nth-child(even){ width:70%; }
+
+.spine-row{
+    display:flex;
+    align-items:flex-end;
+    gap:5px;
+    margin-right:-14px;
+}
+.spine{ width:16px; border-radius:3px 3px 0 0; }
+.spine.h1{ height:120px; background:#c9a15a; }
+.spine.h2{ height:145px; background:#8a5a2b; }
+.spine.h3{ height:100px; background:#e7d9c2; }
+.spine.h4{ height:160px; background:#5b3a1e; }
+.spine.h5{ height:130px; background:#c9a15a; }
+
+/* Bestsellers slide: mock cover grid */
+.cover-grid{
+    display:grid;
+    grid-template-columns:repeat(3,64px);
+    gap:10px;
+    transform:rotate(-4deg);
+}
+.mini-cover{
+    width:64px;
+    height:88px;
+    border-radius:5px;
+    box-shadow:0 10px 20px rgba(0,0,0,.3);
+}
+
+/* Lots of ebooks slide: stacked books + plant + mug */
+.book-stack{ display:flex; flex-direction:column; width:150px; gap:4px; }
+.stack-bar{ height:22px; border-radius:4px; box-shadow:0 4px 8px rgba(0,0,0,.1); }
+.stack-open{
+    width:150px;
+    height:34px;
+    background:#fff;
+    border-radius:4px 4px 10px 10px;
+    box-shadow:0 6px 14px rgba(0,0,0,.15);
+    position:relative;
+    margin-bottom:4px;
+}
+.stack-open::before,
+.stack-open::after{
+    content:'';
+    position:absolute;
+    top:6px;
+    bottom:6px;
+    width:45%;
+    background:#f4f1ea;
+    border-radius:2px;
+}
+.stack-open::before{ left:6px; }
+.stack-open::after{ right:6px; }
+
+.side-props{ display:flex; align-items:flex-end; gap:14px; }
+.prop-icon{
+    width:44px;
+    height:44px;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:18px;
+    box-shadow:0 8px 16px rgba(0,0,0,.1);
+}
+
+@media(max-width:900px){
+    .flat-hero-wrap{ flex-direction:column; text-align:center; gap:24px; }
+    .flat-features{ justify-content:center; }
+    .flat-right{ flex:none; }
+}
+
+@media(max-width:768px){
+    .hero-carousel{ height:200px; }
+    .hero-dots{ right:20px; bottom:14px; }
+}
+
+/* Sections common */
+.section{
+    width:90%;
+    max-width:1300px;
+    margin:auto;
+    padding:50px 0 10px;
+}
+
+
+.carousel-btn{
+    position:absolute;
+    top:110px;
+    width:40px;
+    height:40px;
+    border-radius:50%;
+    background:#fff;
+    border:1px solid #e5e5e5;
+    box-shadow:0 6px 16px rgba(0,0,0,.12);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    color:#333;
+    font-size:14px;
+    z-index:5;
+}
+
+.carousel-btn:hover{ background:#2563eb; color:#fff; }
+.carousel-btn.prev{ left:-20px; }
+.carousel-btn.next{ right:-20px; }
+
+/* Book info layout */
+.book-info-row{
+    display:flex;
+    align-items:flex-start;
+    gap:10px;
+    margin-bottom:6px;
+}
+
+.book-titles{
+    min-width:0;
+    flex:1;
+}
+.book-titles h3{
+    margin-bottom:2px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+.book-titles .author{
+    margin-bottom:0;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+
+.book-meta-line{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+}
+
+.read-btn{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    background:#2d6224;
+    color:#fff;
+    border:none;
+    padding:6px 12px;
+    border-radius:20px;
+    font-size:11px;
+    font-weight:600;
+    cursor:pointer;
+    white-space:nowrap;
+    flex-shrink:0;
+}pointer
+
+.read-btn.paid{ background:#e0a021; color:#1a1a1a; }
+.read-btn:hover{ opacity:.85; }
+
+.price-badge{ font-size:12px; font-weight:500; }
+
+.rating-stars{
+    display:flex;
+    align-items:center;
+    gap:3px;
+    font-size:13px;
+    color:#f5b400;
+    line-height:1;
+}
+.rating-stars i.empty{ color:#ddd; }
+
+/* Payment modal (paid books) */
+.paymodal-overlay{
+    position:fixed; inset:0;
+    background:rgba(10,14,26,.55);
+    display:flex; align-items:center; justify-content:center;
+    z-index:400;
+    opacity:0; visibility:hidden;
+    transition:.2s ease;
+    padding:20px;
+}
+.paymodal-overlay.open{ opacity:1; visibility:visible; }
+.paymodal-box{
+    background:#fff;
+    border-radius:14px;
+    padding:28px;
+    max-width:360px;
+    width:100%;
+    box-shadow:0 25px 60px rgba(0,0,0,.3);
+    transform:translateY(10px);
+    transition:transform .2s ease;
+}
+.paymodal-overlay.open .paymodal-box{ transform:translateY(0); }
+.paymodal-box h3{ font-family:'Playfair Display',serif; margin:0 0 6px; color:#111; }
+.paymodal-box p{ color:#666; font-size:13.5px; margin:0 0 18px; }
+.paymodal-amount{ font-family:'Playfair Display',serif; font-size:1.8rem; color:#e0a021; font-weight:700; margin-bottom:4px; }
+.paymodal-strike{ font-family:'Poppins',sans-serif; font-size:1rem; color:#aaa; text-decoration:line-through; font-weight:500; margin-left:8px; }
+.paymodal-save{ font-size:12.5px; color:#2d6224; font-weight:500; margin-bottom:18px; }
+
+.paymethod-list{ display:flex; flex-direction:column; gap:10px; margin-bottom:20px; }
+.paymethod-option{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    border:1px solid #e2e2e2;
+    border-radius:9px;
+    padding:12px 14px;
+    cursor:pointer;
+    font-size:14px;
+    color:#333;
+    transition:.15s;
+}
+.paymethod-option:hover{ border-color:#2563eb; background:#f7f9ff; }
+.paymethod-option input{ accent-color:#2563eb; width:auto; height:auto; }
+.paymethod-option i{ width:18px; text-align:center; color:#2563eb; }
+
+.paymethod-details{
+    background:#f7f9ff;
+    border:1px solid #e2e2e2;
+    border-radius:9px;
+    padding:14px;
+    margin:-4px 0 4px;
+}
+.paymethod-details .pm-label{
+    display:block;
+    font-size:12px;
+    font-weight:500;
+    color:#444;
+    margin-bottom:5px;
+}
+.paymethod-details input,
+.paymethod-details select{
+    width:100%;
+    height:42px;
+    border:1px solid #ddd;
+    border-radius:8px;
+    padding:0 12px;
+    outline:none;
+    font-size:13.5px;
+    font-family:'Poppins',sans-serif;
+    background:#fff;
+}
+.paymethod-details input:focus,
+.paymethod-details select:focus{
+    border-color:#2563eb;
+    box-shadow:0 0 0 3px rgba(37,99,235,.12);
+}
+.paymodal-actions{ display:flex; gap:10px; }
+.paymodal-actions button{
+    flex:1;
+    height:44px;
+    border-radius:9px;
+    font-size:14px;
+    font-weight:500;
+    cursor:pointer;
+    border:none;
+}
+.paymodal-cancel{ background:#f2f2f2; color:#444; }
+.paymodal-cancel:hover{ background:#e6e6e6; }
+.paymodal-pay{ background:#2563eb; color:#fff; }
+.paymodal-pay:hover{ background:#1d4ed8; }
+{% endblock %}
+
+{% block content %}
+<!-- Hero Carousel -->
+<section class="hero-carousel">
+    <div class="hero-slides" id="heroSlides">
+
+        <!-- Slide 1 : The Ultimate Guide to Free eBooks -->
+        <div class="hero-slide" style="background:url('{% static "images/hero-guide.jpg" %}') center/cover no-repeat;">
+        </div>
+
+        <!-- Slide 2 : Free and Discounted Bestsellers -->
+        <div class="hero-slide" style="background:url('{% static "images/hero-bestsellers.jpg" %}') center/cover no-repeat;">
+        </div>
+
+        <!-- Slide 3 : Lots of eBooks. 100% Free -->
+        <div class="hero-slide" style="background:url('{% static "images/hero-freebooks.jpg" %}') center/cover no-repeat;">
+        </div>
+
+    </div>
+
+    <div class="hero-dots" id="heroDots"></div>
+</section>
+
+<!-- Browse Categories -->
+<section class="section" id="categories-section">
+    <div class="section-head">
+        <h2>Browse Categories</h2>
+       <a href="{% url 'category_home' %}" class="view-all">View All <i class="fa-solid fa-chevron-right"></i></a>
+    </div>
+
+    <div class="category-grid" id="categoryGrid">
+       {% for cat in categories|slice:":8" %} 
+        {% if cat.image_url %}
+        <div class="category-card image-cat" data-cat="{{ cat.name }}" onclick="window.location.href='{% url 'category_books' cat.name %}'" style="background-image:url('{{ cat.image_url }}');">
+            <div class="cat-overlay"><p>{{ cat.name }}</p></div>
+        </div>
+        {% else %}
+        <div class="category-card" data-cat="{{ cat.name }}" onclick="window.location.href='{% url 'category_books' cat.name %}'">
+            <div class="cat-icon {{ cat.css_class }}"><i class="{{ cat.icon }}"></i></div>
+            <p>{{ cat.name }}</p>
+        </div>
+        {% endif %}
+        {% empty %}
+        <p class="empty-state">No categories yet — they'll show up here once books are added.</p>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- Featured Books -->
+<section class="section" id="books-section">
+    <div class="section-head">
+        <h2>Featured Books</h2>
+        <a href="{% url 'all_books' %}" class="view-all">View All <i class="fa-solid fa-chevron-right"></i></a>
+    </div>
+
+    <div class="carousel-wrap">
+        <button class="carousel-btn prev" onclick="scrollBooks(-1)"><i class="fa-solid fa-chevron-left"></i></button>
+
+        <div class="book-row" id="bookRow">
+            {% for card in book_cards %}
+            <div class="book-card" data-cat="{{ card.obj.category|default:'' }}" onclick="window.location.href='{% url 'book_detail' card.obj.id %}'">
+                <div class="book-cover {% if not card.obj.cover_image %}{{ card.cover_class }}{% endif %}"
+                     {% if card.obj.cover_image %}style="background-image:url('{{ card.obj.cover_image.url }}'); background-size:cover; background-position:center;"{% endif %}>
+                    {% if not card.obj.cover_image %}
+                        <span>{{ card.obj.author }}</span>
+                        <h4>{{ card.obj.title }}</h4>
+                    {% endif %}
+                </div>
+                <div class="book-info">
+                    <h3>{{ card.obj.title }}</h3>
+                    <p class="author">{{ card.obj.author }}</p>
+                    <div class="book-meta-line">
+                        <p class="rating"><i class="fa-solid fa-circle-check"></i> {{ card.obj.get_status_display }}</p>
+                        {% if card.obj.is_paid %}
+                        <span class="price-badge badge-paid"><i class="fa-solid fa-lock"></i> ₹{{ card.obj.final_price }}</span>
+                        {% else %}
+                        <span class="price-badge badge-free"><i class="fa-solid fa-unlock"></i> Free</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <p class="empty-state">No books added yet — check back soon!</p>
+            {% endfor %}
+        </div>
+
+        <button class="carousel-btn next" onclick="scrollBooks(1)"><i class="fa-solid fa-chevron-right"></i></button>
+    </div>
+</section>
+
+<!-- Free eBooks -->
+<section class="section" id="free-books-section">
+    <div class="section-head">
+        <h2>Free eBooks</h2>
+        <a href="{% url 'free_books' %}" class="view-all">View All <i class="fa-solid fa-chevron-right"></i></a>
+    </div>
+    <div class="carousel-wrap">
+        <button class="carousel-btn prev" onclick="scrollBooks(-1, 'freeRow')"><i class="fa-solid fa-chevron-left"></i></button>
+        <div class="book-row" id="freeRow">
+            {% for card in free_book_cards %}
+            <div class="book-card" data-cat="{{ card.obj.category|default:'' }}" onclick="window.location.href='{% url 'book_detail' card.obj.id %}'">
+                <div class="book-cover {% if not card.obj.cover_image %}{{ card.cover_class }}{% endif %}"
+                     {% if card.obj.cover_image %}style="background-image:url('{{ card.obj.cover_image.url }}'); background-size:cover; background-position:center;"{% endif %}>
+                    {% if not card.obj.cover_image %}
+                        <span>{{ card.obj.author }}</span>
+                        <h4>{{ card.obj.title }}</h4>
+                    {% endif %}
+                </div>
+                <div class="book-info">
+                    <h3>{{ card.obj.title }}</h3>
+                    <p class="author">{{ card.obj.author }}</p>
+                    <div class="book-meta-line">
+                        <p class="rating"><i class="fa-solid fa-circle-check"></i> {{ card.obj.get_status_display }}</p>
+                        <span class="price-badge badge-free"><i class="fa-solid fa-unlock"></i> Free</span>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <p class="empty-state">No free books added yet — check back soon!</p>
+            {% endfor %}
+        </div>
+        <button class="carousel-btn next" onclick="scrollBooks(1, 'freeRow')"><i class="fa-solid fa-chevron-right"></i></button>
+    </div>
+</section>
+
+<!-- Paid Books -->
+<section class="section" id="paid-books-section">
+    <div class="section-head">
+        <h2>Paid Books</h2>
+        <a href="{% url 'paid_books' %}" class="view-all">View All <i class="fa-solid fa-chevron-right"></i></a>
+    </div>
+    <div class="carousel-wrap">
+        <button class="carousel-btn prev" onclick="scrollBooks(-1, 'paidRow')"><i class="fa-solid fa-chevron-left"></i></button>
+        <div class="book-row" id="paidRow">
+            {% for card in paid_book_cards %}
+            <div class="book-card" data-cat="{{ card.obj.category|default:'' }}" onclick="window.location.href='{% url 'book_detail' card.obj.id %}'">
+                <div class="book-cover {% if not card.obj.cover_image %}{{ card.cover_class }}{% endif %}"
+                     {% if card.obj.cover_image %}style="background-image:url('{{ card.obj.cover_image.url }}'); background-size:cover; background-position:center;"{% endif %}>
+                    {% if not card.obj.cover_image %}
+                        <span>{{ card.obj.author }}</span>
+                        <h4>{{ card.obj.title }}</h4>
+                    {% endif %}
+                </div>
+                <div class="book-info">
+                    <h3>{{ card.obj.title }}</h3>
+                    <p class="author">{{ card.obj.author }}</p>
+                    <div class="book-meta-line">
+                        <p class="rating"><i class="fa-solid fa-circle-check"></i> {{ card.obj.get_status_display }}</p>
+                        <span class="price-badge badge-paid"><i class="fa-solid fa-lock"></i> ₹{{ card.obj.final_price }}</span>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <p class="empty-state">No paid books added yet — check back soon!</p>
+            {% endfor %}
+        </div>
+        <button class="carousel-btn next" onclick="scrollBooks(1, 'paidRow')"><i class="fa-solid fa-chevron-right"></i></button>
+    </div>
+</section>
+
+<!-- Recently Added -->
+<section class="section" id="recent-books-section">
+    <div class="section-head">
+        <h2>Recently Added</h2>
+        <a href="{% url 'recent_books' %}" class="view-all">View All <i class="fa-solid fa-chevron-right"></i></a>
+    </div>
+    <div class="carousel-wrap">
+        <button class="carousel-btn prev" onclick="scrollBooks(-1, 'recentRow')"><i class="fa-solid fa-chevron-left"></i></button>
+        <div class="book-row" id="recentRow">
+            {% for card in recent_book_cards %}
+            <div class="book-card" data-cat="{{ card.obj.category|default:'' }}" onclick="window.location.href='{% url 'book_detail' card.obj.id %}'">
+                <div class="book-cover {% if not card.obj.cover_image %}{{ card.cover_class }}{% endif %}"
+                     {% if card.obj.cover_image %}style="background-image:url('{{ card.obj.cover_image.url }}'); background-size:cover; background-position:center;"{% endif %}>
+                    {% if not card.obj.cover_image %}
+                        <span>{{ card.obj.author }}</span>
+                        <h4>{{ card.obj.title }}</h4>
+                    {% endif %}
+                </div>
+                <div class="book-info">
+                    <h3>{{ card.obj.title }}</h3>
+                    <p class="author">{{ card.obj.author }}</p>
+                    <div class="book-meta-line">
+                        <p class="rating"><i class="fa-solid fa-circle-check"></i> {{ card.obj.get_status_display }}</p>
+                        {% if card.obj.is_paid %}
+                        <span class="price-badge badge-paid"><i class="fa-solid fa-lock"></i> ₹{{ card.obj.final_price }}</span>
+                        {% else %}
+                        <span class="price-badge badge-free"><i class="fa-solid fa-unlock"></i> Free</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <p class="empty-state">No books added yet.</p>
+            {% endfor %}
+        </div>
+        <button class="carousel-btn next" onclick="scrollBooks(1, 'recentRow')"><i class="fa-solid fa-chevron-right"></i></button>
+    </div>
+</section>
+
+<!-- Popular Books -->
+<section class="section" id="popular-books-section">
+    <div class="section-head">
+        <h2>Popular Books</h2>
+        <a href="{% url 'popular_books' %}" class="view-all">View All <i class="fa-solid fa-chevron-right"></i></a>
+    </div>
+    <div class="carousel-wrap">
+        <button class="carousel-btn prev" onclick="scrollBooks(-1, 'popularRow')"><i class="fa-solid fa-chevron-left"></i></button>
+        <div class="book-row" id="popularRow">
+            {% for card in popular_book_cards %}
+            <div class="book-card" data-cat="{{ card.obj.category|default:'' }}" onclick="window.location.href='{% url 'book_detail' card.obj.id %}'">
+                <div class="book-cover {% if not card.obj.cover_image %}{{ card.cover_class }}{% endif %}"
+                     {% if card.obj.cover_image %}style="background-image:url('{{ card.obj.cover_image.url }}'); background-size:cover; background-position:center;"{% endif %}>
+                    {% if not card.obj.cover_image %}
+                        <span>{{ card.obj.author }}</span>
+                        <h4>{{ card.obj.title }}</h4>
+                    {% endif %}
+                </div>
+                <div class="book-info">
+                    <h3>{{ card.obj.title }}</h3>
+                    <p class="author">{{ card.obj.author }}</p>
+                    <div class="book-meta-line">
+                        <p class="rating"><i class="fa-solid fa-circle-check"></i> {{ card.obj.get_status_display }}</p>
+                        {% if card.obj.is_paid %}
+                        <span class="price-badge badge-paid"><i class="fa-solid fa-lock"></i> ₹{{ card.obj.final_price }}</span>
+                        {% else %}
+                        <span class="price-badge badge-free"><i class="fa-solid fa-unlock"></i> Free</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <p class="empty-state">No ratings yet — This will be populated once reviews are added.</p>
+            {% endfor %}
+        </div>
+        <button class="carousel-btn next" onclick="scrollBooks(1, 'popularRow')"><i class="fa-solid fa-chevron-right"></i></button>
+    </div>
+</section>
+
+<!-- Payment modal (shown when a reader clicks Read on a paid book) -->
+<div class="paymodal-overlay" id="payModalOverlay">
+    <div class="paymodal-box">
+        <div id="payModalSummaryView">
+            <h3 id="payModalTitle">Unlock this book</h3>
+            <p id="payModalTitle-desc">This title is a paid book. Complete payment to read it.</p>
+            <div class="paymodal-amount" id="payModalAmount">₹0.00 <span class="paymodal-strike" id="payModalStrike"></span></div>
+            <div class="paymodal-save" id="payModalSave"></div>
+            <div class="paymodal-actions">
+                <button type="button" class="paymodal-cancel" id="payModalCancel">Cancel</button>
+                <button type="button" class="paymodal-pay" id="payModalPay">Pay &amp; Read</button>
+            </div>
+        </div>
+
+        <div id="payModalMethodView" style="display:none;">
+            <h3>Choose payment method</h3>
+            <p style="margin-bottom:16px;">Amount to pay: <strong id="payModalMethodAmount">₹0.00</strong></p>
+            <div class="paymethod-list">
+                <label class="paymethod-option">
+                    <input type="radio" name="payMethod" value="UPI" data-target="upiDetails" checked>
+                    <i class="fa-solid fa-mobile-screen-button"></i> UPI
+                </label>
+                <div class="paymethod-details" id="upiDetails">
+                    <label class="pm-label" for="upiIdInput">UPI ID</label>
+                    <input type="text" id="upiIdInput" placeholder="yourname@upi">
+                </div>
+
+                <label class="paymethod-option">
+                    <input type="radio" name="payMethod" value="Credit / Debit Card" data-target="cardDetails">
+                    <i class="fa-regular fa-credit-card"></i> Credit / Debit Card
+                </label>
+                <div class="paymethod-details" id="cardDetails" style="display:none;">
+                    <label class="pm-label" for="cardNumberInput">Card number</label>
+                    <input type="text" id="cardNumberInput" placeholder="1234 5678 9012 3456" maxlength="19">
+                    <div style="display:flex; gap:10px; margin-top:10px;">
+                        <div style="flex:1;">
+                            <label class="pm-label" for="cardExpiryInput">Expiry</label>
+                            <input type="text" id="cardExpiryInput" placeholder="MM/YY" maxlength="5">
+                        </div>
+                        <div style="flex:1;">
+                            <label class="pm-label" for="cardCvvInput">CVV</label>
+                            <input type="password" id="cardCvvInput" placeholder="123" maxlength="3">
+                        </div>
+                    </div>
+                </div>
+
+                <label class="paymethod-option">
+                    <input type="radio" name="payMethod" value="Net Banking" data-target="netbankingDetails">
+                    <i class="fa-solid fa-building-columns"></i> Net Banking
+                </label>
+                <div class="paymethod-details" id="netbankingDetails" style="display:none;">
+                    <label class="pm-label" for="netbankingSelect">Select your bank</label>
+                    <select id="netbankingSelect">
+                        <option value="">Choose a bank</option>
+                        <option value="State Bank of India">State Bank of India</option>
+                        <option value="HDFC Bank">HDFC Bank</option>
+                        <option value="ICICI Bank">ICICI Bank</option>
+                        <option value="Axis Bank">Axis Bank</option>
+                        <option value="Kotak Mahindra Bank">Kotak Mahindra Bank</option>
+                    </select>
+                </div>
+
+                <label class="paymethod-option">
+                    <input type="radio" name="payMethod" value="Wallet" data-target="walletDetails">
+                    <i class="fa-solid fa-wallet"></i> Wallet
+                </label>
+                <div class="paymethod-details" id="walletDetails" style="display:none;">
+                    <label class="pm-label" for="walletSelect">Select wallet</label>
+                    <select id="walletSelect">
+                        <option value="">Choose a wallet</option>
+                        <option value="Paytm">Paytm</option>
+                        <option value="PhonePe">PhonePe</option>
+                        <option value="Amazon Pay">Amazon Pay</option>
+                        <option value="Mobikwik">Mobikwik</option>
+                    </select>
+                </div>
+            </div>
+            <div class="paymodal-actions">
+                <button type="button" class="paymodal-cancel" id="payModalMethodBack">Back</button>
+                <button type="button" class="paymodal-pay" id="payModalMethodConfirm">Confirm &amp; Pay</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+/* ================= Hero Carousel logic ================= */
+document.addEventListener('DOMContentLoaded', function () {
+    const track = document.getElementById('heroSlides');
+    const slides = document.querySelectorAll('.hero-slide');
+    const dotsContainer = document.getElementById('heroDots');
+    let index = 0;
+    let heroInterval;
+
+    // build dots dynamically based on slide count
+    slides.forEach((_, i) => {
+        const dot = document.createElement('div');
+        dot.classList.add('hero-dot');
+        if (i === 0) dot.classList.add('active');
+        dot.addEventListener('click', () => {
+            goToSlide(i);
+            resetAutoSlide();
+        });
+        dotsContainer.appendChild(dot);
+    });
+
+    const dots = document.querySelectorAll('.hero-dot');
+
+    function goToSlide(i) {
+        index = i;
+        track.style.transform = `translateX(-${index * 100}%)`;
+        dots.forEach(d => d.classList.remove('active'));
+        dots[index].classList.add('active');
+    }
+
+    function nextSlide() {
+        index = (index + 1) % slides.length;
+        goToSlide(index);
+    }
+
+    function startAutoSlide() {
+        heroInterval = setInterval(nextSlide, 7000);
+    }
+
+    function resetAutoSlide() {
+        clearInterval(heroInterval);
+        startAutoSlide();
+    }
+
+    startAutoSlide();
+
+    const heroSection = document.querySelector('.hero-carousel');
+    heroSection.addEventListener('mouseenter', () => clearInterval(heroInterval));
+    heroSection.addEventListener('mouseleave', startAutoSlide);
+});
+
+/* Carousel scroll (Featured Books row) */
+function scrollBooks(dir, rowId){
+    rowId = rowId || 'bookRow';
+    const row = document.getElementById(rowId);
+    if(row) row.scrollBy({ left: dir * 300, behavior: 'smooth' });
+}
+
+/* Animated count-up for hero stats (Books / Categories / Authors) */
+function animateStatCount(el, duration = 1200){
+    const target = parseInt(el.textContent.trim(), 10) || 0;
+    if(target === 0){
+        el.textContent = '0';
+        return;
+    }
+    const start = performance.now();
+    function tick(now){
+        const progress = Math.min((now - start) / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        const current = Math.floor(eased * target);
+        el.textContent = current;
+        if(progress < 1){
+            requestAnimationFrame(tick);
+        }else{
+            el.textContent = target;
+        }
+    }
+    requestAnimationFrame(tick);
+}
+
+document.addEventListener('DOMContentLoaded', function(){
+    ['statBooksCount', 'statCategoriesCount', 'statAuthorsCount'].forEach(id => {
+        const el = document.getElementById(id);
+        if(el) animateStatCount(el);
+    });
+});
+</script>
+{% endblock %}

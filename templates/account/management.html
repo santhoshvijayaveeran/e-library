@@ -1,0 +1,695 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Admin Panel — Sanza Library{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['Plus Jakarta Sans', 'Inter', 'sans-serif'],
+          display: ['Playfair Display', 'serif'],
+        },
+        colors: {
+          primary: '#2563EB', 'primary-hover': '#1D4ED8', bg: '#F8FAFC', card: '#FFFFFF',
+          border: '#E2E8F0', ink: '#0F172A', muted: '#64748B', success: '#22C55E',
+          danger: '#EF4444', warning: '#F59E0B', purple: '#8B5CF6',
+        },
+        boxShadow: { soft: '0 15px 45px rgba(15,23,42,.08)' },
+        borderRadius: { xl2: '22px' },
+      }
+    }
+  }
+</script>
+{% endblock %}
+
+{% block extra_css %}
+#admin-panel-root{ font-family:'Plus Jakarta Sans','Inter',sans-serif; }
+#admin-panel-root .input-field{ height:52px; border-radius:14px; border:1.5px solid #E2E8F0; background:#fff; padding:0 16px; font-size:.925rem; color:#0F172A; outline:none; transition:border-color .2s ease, box-shadow .2s ease; width:100%; }
+#admin-panel-root textarea.input-field{ height:auto; padding:14px 16px; min-height:110px; resize:vertical; }
+#admin-panel-root .input-field::placeholder{ color:#94A3B8; }
+#admin-panel-root .input-field:focus{ border-color:#2563EB; box-shadow:0 0 0 4px rgba(37,99,235,.12); }
+#admin-panel-root .file-field{ border-radius:14px; border:1.5px dashed #CBD5E1; background:#F8FAFC; padding:12px 16px; display:flex; align-items:center; gap:10px; cursor:pointer; transition:all .2s ease; position:relative; }
+#admin-panel-root .file-field:hover{ border-color:#2563EB; background:#EFF6FF; }
+#admin-panel-root .file-field input[type=file]{ position:absolute; inset:0; opacity:0; cursor:pointer; }
+#admin-panel-root .stat-card{ transition:transform .3s cubic-bezier(.22,1,.36,1), box-shadow .3s ease; }
+#admin-panel-root .stat-card:hover{ transform:translateY(-5px); box-shadow:0 15px 45px rgba(15,23,42,.08); }
+#admin-panel-root .btn-primary{ background:linear-gradient(135deg,#2563EB 0%,#1D4ED8 100%); transition:transform .18s ease, box-shadow .18s ease; box-shadow:0 8px 20px rgba(37,99,235,.28); }
+#admin-panel-root .btn-primary:hover{ transform:scale(1.02); box-shadow:0 10px 26px rgba(37,99,235,.36); }
+#admin-panel-root .sidebar-link{ position:relative; transition:background .2s ease, color .2s ease; }
+#admin-panel-root .sidebar-link:hover{ background:#F1F5F9; }
+#admin-panel-root .sidebar-link.active{ background:linear-gradient(135deg,#EFF6FF 0%,#E0EDFF 100%); color:#2563EB; font-weight:700; }
+#admin-panel-root .sidebar-link.active::before{ content:''; position:absolute; left:-12px; top:50%; transform:translateY(-50%); width:4px; height:60%; border-radius:4px; background:#2563EB; }
+#admin-panel-root .table-row{ transition:background .2s ease; }
+#admin-panel-root .table-row:hover{ background:#F8FAFC; }
+#admin-panel-root .icon-btn{ transition:transform .15s ease, background .2s ease; }
+#admin-panel-root .icon-btn:hover{ transform:translateY(-1px); }
+#admin-panel-root .toggle-btn{ flex:1; text-align:center; padding:12px; border:1.5px solid #E2E8F0; border-radius:12px; background:#F8FAFC; color:#64748B; font-weight:600; font-size:.85rem; cursor:pointer; transition:all .2s ease; }
+#admin-panel-root .toggle-btn.active{ background:#2563EB; border-color:#2563EB; color:#fff; }
+#admin-panel-root .price-fields{ display:none; }
+#admin-panel-root .price-fields.show{ display:grid; }
+#admin-panel-root .tag-admin{ background:#EFF6FF; color:#2563EB; }
+#admin-panel-root .tag-editor, #admin-panel-root .tag-free{ background:#DCFCE7; color:#16A34A; }
+#admin-panel-root .tag-viewer{ background:#F1F5F9; color:#64748B; }
+#admin-panel-root .tag-paid{ background:#EFF6FF; color:#2563EB; }
+#admin-panel-root .edit-banner{ display:none; }
+#admin-panel-root .edit-banner.show{ display:flex; }
+#admin-panel-root .fade-panel{ animation:adminFadeIn .25s ease; }
+@keyframes adminFadeIn{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
+{% endblock %}
+
+{% block content %}
+<div id="admin-panel-root" class="max-w-[1600px] mx-auto flex items-start gap-8 px-10 py-10">
+
+  <!-- SIDEBAR -->
+  <aside class="hidden md:flex flex-col gap-1.5 bg-white rounded-xl2 shadow-soft p-4 sticky top-[112px]" style="width:260px;">
+    <div class="sidebar-link active flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer text-[15px] text-slate-600" data-panel="books-panel">
+      <i data-lucide="book" class="w-[18px] h-[18px]"></i> Books
+    </div>
+    <div class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer text-[15px] text-slate-600" data-panel="categories-panel">
+      <i data-lucide="layers" class="w-[18px] h-[18px]"></i> Categories
+    </div>
+    <div class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer text-[15px] text-slate-600" data-panel="authors-panel">
+      <i data-lucide="feather" class="w-[18px] h-[18px]"></i> Authors
+    </div>
+    <div class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer text-[15px] text-slate-600" data-panel="about-panel">
+      <i data-lucide="pen-line" class="w-[18px] h-[18px]"></i> About Us
+    </div>
+    <div class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer text-[15px] text-slate-600" data-panel="access-panel">
+      <i data-lucide="shield" class="w-[18px] h-[18px]"></i> Access
+    </div>
+    <div class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer text-[15px] text-slate-600" data-panel="profile-panel">
+      <i data-lucide="user" class="w-[18px] h-[18px]"></i> Profile
+    </div>
+
+    <div class="rounded-xl2 p-6 text-white relative overflow-hidden mt-4" style="background:linear-gradient(160deg,#2563EB 0%,#1D4ED8 55%,#1E3A8A 100%);">
+      <div class="absolute -right-6 -top-8 w-28 h-28 rounded-full bg-white/10"></div>
+      <div class="absolute -right-2 bottom-4 w-16 h-16 rounded-full bg-white/10"></div>
+      <i data-lucide="library" class="w-7 h-7 mb-4 text-white/90"></i>
+      <h4 class="font-display font-bold text-lg leading-snug mb-2 relative z-10">Manage your digital library effortlessly.</h4>
+      <p class="text-[13px] text-blue-100 leading-relaxed mb-5 relative z-10">Organize books, categories and authors.</p>
+      <button type="button" class="relative z-10 w-full bg-white text-primary font-semibold text-sm py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-blue-50 transition-colors"
+              onclick="document.getElementById('book-title').focus(); document.querySelector('#admin-panel-root [data-panel=books-panel]').click();">
+        <i data-lucide="plus-circle" class="w-4 h-4"></i> Add New Book
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="flex-1 min-w-0">
+
+    {% if messages %}
+      {% for message in messages %}
+        <div class="bg-white rounded-xl2 shadow-soft p-4 mb-4 border-l-4 border-primary text-sm">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+
+    <!-- STATS -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-9">
+      <div class="stat-card bg-white rounded-xl2 shadow-soft p-6 flex items-center gap-4" style="height:110px;">
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0" style="background:linear-gradient(135deg,#DBEAFE,#EFF6FF);">
+          <i data-lucide="book" class="w-5 h-5 text-primary"></i>
+        </div>
+        <div><div class="font-display font-extrabold text-3xl text-ink leading-none">{{ book_count }}</div><div class="text-[13px] text-muted mt-1.5">Books</div></div>
+      </div>
+      <div class="stat-card bg-white rounded-xl2 shadow-soft p-6 flex items-center gap-4" style="height:110px;">
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0" style="background:linear-gradient(135deg,#EDE9FE,#F5F3FF);">
+          <i data-lucide="layers" class="w-5 h-5 text-purple"></i>
+        </div>
+        <div><div class="font-display font-extrabold text-3xl text-ink leading-none">{{ category_count }}</div><div class="text-[13px] text-muted mt-1.5">Categories</div></div>
+      </div>
+      <div class="stat-card bg-white rounded-xl2 shadow-soft p-6 flex items-center gap-4" style="height:110px;">
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0" style="background:linear-gradient(135deg,#D1FAE5,#ECFDF5);">
+          <i data-lucide="feather" class="w-5 h-5 text-success"></i>
+        </div>
+        <div><div class="font-display font-extrabold text-3xl text-ink leading-none">{{ author_count }}</div><div class="text-[13px] text-muted mt-1.5">Authors</div></div>
+      </div>
+      <div class="stat-card bg-white rounded-xl2 shadow-soft p-6 flex items-center gap-4" style="height:110px;">
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0" style="background:linear-gradient(135deg,#FFEDD5,#FFF7ED);">
+          <i data-lucide="users" class="w-5 h-5 text-warning"></i>
+        </div>
+        <div><div class="font-display font-extrabold text-3xl text-ink leading-none">{{ team_count }}</div><div class="text-[13px] text-muted mt-1.5">Team Members</div></div>
+      </div>
+    </div>
+
+    <!-- PROFILE -->
+    <section class="admin-section hidden fade-panel" id="profile-panel">
+      <div class="mb-9">
+        <div class="text-[12px] font-bold tracking-[2px] uppercase text-primary mb-2">Account</div>
+        <h1 class="font-display font-extrabold text-4xl md:text-5xl text-ink mb-3">My Profile</h1>
+      </div>
+      <div class="bg-white rounded-xl2 shadow-soft p-8 max-w-md">
+        <div class="flex flex-col gap-4 text-sm">
+          <p><span class="font-bold text-ink">Name:</span> <span class="text-muted">{{ user_name }}</span></p>
+          <p><span class="font-bold text-ink">Email:</span> <span class="text-muted">{{ user_email }}</span></p>
+          <p><span class="font-bold text-ink">Role:</span> <span class="text-muted">Admin — full access</span></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- BOOKS -->
+    <section class="admin-section fade-panel" id="books-panel">
+      <div class="mb-9">
+        <div class="text-[12px] font-bold tracking-[2px] uppercase text-primary mb-2">Catalogue</div>
+        <h1 class="font-display font-extrabold text-4xl md:text-5xl text-ink mb-3">Books</h1>
+        <p class="text-muted text-[15px] max-w-md leading-relaxed">Add new titles and keep existing entries up to date.</p>
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-[30px] items-start">
+        <div class="bg-white rounded-xl2 shadow-soft p-8">
+          <div class="edit-banner items-center justify-between gap-3 bg-blue-50 text-primary-hover border border-blue-200 rounded-xl px-4 py-3 text-sm font-semibold mb-5" id="book-edit-banner">
+            <span>Editing an existing book</span>
+            <button type="button" id="book-cancel-edit-inline" class="underline text-xs font-bold">Cancel edit</button>
+          </div>
+          <div class="flex items-center gap-3 mb-7">
+            <div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center"><i data-lucide="clipboard-list" class="w-5 h-5 text-primary"></i></div>
+            <h3 id="book-form-heading" class="font-display font-bold text-xl text-ink">Add a Book</h3>
+          </div>
+          <form id="book-form" method="post" enctype="multipart/form-data" action="{% url 'admin_add_book' %}" class="flex flex-col gap-5">
+            {% csrf_token %}
+            <input type="hidden" name="pricing_type" id="pricing-type-hidden" value="Free">
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-2">Title *</label>
+              <input type="text" name="title" id="book-title" class="input-field" required>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-2">Author</label>
+                <input type="text" name="author" id="book-author" placeholder="e.g. Chimamanda Ngozi Adichie" class="input-field">
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-2">Category *</label>
+                <select name="category" id="book-category" class="input-field" required>
+                  <option value="">Select category</option>
+                  {% for cat in categories %}<option value="{{ cat.id }}">{{ cat.name }}</option>{% endfor %}
+                </select>
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-2">ISBN</label>
+              <input type="text" name="isbn" id="book-isbn" class="input-field">
+            </div>
+                        <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-2">Description</label>
+              <textarea name="description" id="book-description" rows="3" placeholder="Short description of the book" class="input-field" style="height:auto; padding:12px 16px;"></textarea>
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-2">Status</label>
+              <select name="status" id="book-status" class="input-field">
+                <option value="Available">Available</option>
+                <option value="Unavailable">Unavailable</option>
+              </select>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-2">Cover Image</label>
+                <label class="file-field" for="book-image">
+                  <input type="file" name="cover_image" id="book-image" accept="image/*" onchange="updateFileName(this,'book-image-name')">
+                  <i data-lucide="upload-cloud" class="w-4 h-4 text-primary shrink-0"></i>
+                  <span class="text-sm"><span class="text-primary font-semibold">Choose File</span><div class="text-[11px] text-muted" id="book-image-name">No file chosen</div></span>
+                </label>
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-2">Book PDF</label>
+                <label class="file-field" for="book-pdf">
+                  <input type="file" name="pdf_file" id="book-pdf" accept="application/pdf" onchange="updateFileName(this,'book-pdf-name')">
+                  <i data-lucide="upload-cloud" class="w-4 h-4 text-primary shrink-0"></i>
+                  <span class="text-sm"><span class="text-primary font-semibold">Choose File</span><div class="text-[11px] text-muted" id="book-pdf-name">No file chosen</div></span>
+                </label>
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-2">Pricing</label>
+              <div class="flex gap-3">
+                <button type="button" class="toggle-btn active" id="btn-free" data-type="Free">Free</button>
+                <button type="button" class="toggle-btn" id="btn-paid" data-type="Paid">Paid</button>
+              </div>
+              <div class="price-fields grid-cols-2 gap-4 mt-4" id="price-fields">
+                <div>
+                  <label class="block text-sm font-semibold text-slate-700 mb-2">Price (₹)</label>
+                  <input type="number" name="price" id="book-price" min="0" step="0.01" class="input-field">
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold text-slate-700 mb-2">Discount (₹)</label>
+                  <input type="number" name="discount" id="book-discount" min="0" step="0.01" class="input-field">
+                </div>
+              </div>
+            </div>
+            <div class="flex items-center gap-5 mt-2">
+              <button type="submit" id="book-submit-btn" class="btn-primary text-white font-semibold text-sm rounded-xl flex items-center justify-center gap-2 flex-1" style="height:48px;">
+                <i data-lucide="plus-circle" class="w-4 h-4"></i> Add Book
+              </button>
+              <button type="reset" class="text-sm font-semibold text-muted hover:text-ink transition-colors">Clear</button>
+              <button type="button" id="book-cancel-edit" class="text-sm font-semibold text-muted hover:text-ink transition-colors" style="display:none;">Cancel edit</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="bg-white rounded-xl2 shadow-soft p-8">
+          <h3 class="font-display font-bold text-xl text-ink mb-6">Catalogue ({{ book_count }})</h3>
+          <div class="overflow-x-auto">
+            <table class="w-full border-collapse">
+              <thead>
+                <tr class="text-left">
+                  <th class="text-[11px] uppercase tracking-wider text-muted font-bold pb-3 border-b border-border">Title</th>
+                  <th class="text-[11px] uppercase tracking-wider text-muted font-bold pb-3 border-b border-border">Author</th>
+                  <th class="text-[11px] uppercase tracking-wider text-muted font-bold pb-3 border-b border-border">Category</th>
+                  <th class="text-[11px] uppercase tracking-wider text-muted font-bold pb-3 border-b border-border">Price</th>
+                  <th class="text-[11px] uppercase tracking-wider text-muted font-bold pb-3 border-b border-border">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for book in books %}
+                <tr class="table-row">
+                  <td class="py-4 border-b border-slate-100 align-middle">
+                    <div class="flex items-center gap-3">
+                      {% if book.cover_image %}<img src="{{ book.cover_image.url }}" class="w-10 h-14 rounded-md shrink-0 object-cover" alt="">{% else %}<div class="w-10 h-14 rounded-md shrink-0 bg-slate-100"></div>{% endif %}
+                      <div><div class="font-bold text-ink text-sm">{{ book.title }}</div>{% if book.isbn %}<div class="text-[12px] text-slate-400 mt-0.5">{{ book.isbn }}</div>{% endif %}</div>
+                    </div>
+                  </td>
+                  <td class="py-4 border-b border-slate-100 text-[13px] text-slate-600 align-middle">{{ book.author|default:"—" }}</td>
+                  <td class="py-4 border-b border-slate-100 text-[13px] text-slate-600 align-middle">{{ book.category.name|default:"—" }}</td>
+                  <td class="py-4 border-b border-slate-100 align-middle">
+                    {% if book.is_paid %}<span class="tag-paid text-[12px] font-bold px-3 py-1.5 rounded-full">₹{{ book.final_price }}</span>{% else %}<span class="tag-free text-[12px] font-bold px-3 py-1.5 rounded-full">Free</span>{% endif %}
+                  </td>
+                  <td class="py-4 border-b border-slate-100 align-middle">
+                    <div class="flex items-center gap-2">
+                      <button type="button" class="icon-btn js-edit-book flex items-center gap-1.5 text-xs font-semibold text-primary border border-blue-200 bg-blue-50 px-3 py-2 rounded-lg hover:bg-blue-100"
+                        data-id="{{ book.id }}" data-title="{{ book.title|escapejs }}" data-author="{{ book.author|default:''|escapejs }}"
+                        data-category="{{ book.category_id|default:'' }}" data-isbn="{{ book.isbn|default:''|escapejs }}"
+                        data-paid="{{ book.is_paid|yesno:'true,false' }}" data-price="{{ book.price|default:0|stringformat:'s' }}" data-discount="{{ book.discount|default:0|stringformat:'s' }}">
+                        <i data-lucide="pencil" class="w-3.5 h-3.5"></i> Edit
+                      </button>
+                      <form method="post" action="{% url 'admin_delete_book' book.id %}" style="display:inline;" class="js-confirm-delete" data-confirm-name="{{ book.title|escapejs }}">
+                        {% csrf_token %}
+                        <button type="submit" class="icon-btn flex items-center gap-1.5 text-xs font-semibold text-danger border border-red-200 bg-red-50 px-3 py-2 rounded-lg hover:bg-red-100"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Remove</button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="py-10 text-center text-muted italic">No books yet.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CATEGORIES -->
+    <section class="admin-section hidden fade-panel" id="categories-panel">
+      <div class="mb-9">
+        <div class="text-[12px] font-bold tracking-[2px] uppercase text-primary mb-2">Organisation</div>
+        <h1 class="font-display font-extrabold text-4xl md:text-5xl text-ink mb-3">Categories</h1>
+        <p class="text-muted text-[15px] max-w-md leading-relaxed">Group books by genre or subject.</p>
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-[30px] items-start">
+        <div class="bg-white rounded-xl2 shadow-soft p-8">
+          <div class="edit-banner items-center justify-between gap-3 bg-blue-50 text-primary-hover border border-blue-200 rounded-xl px-4 py-3 text-sm font-semibold mb-5" id="category-edit-banner">
+            <span>Editing an existing category</span>
+            <button type="button" id="category-cancel-edit-inline" class="underline text-xs font-bold">Cancel edit</button>
+          </div>
+          <h3 id="category-form-heading" class="font-display font-bold text-xl text-ink mb-6">Add a Category</h3>
+          <form id="category-form" method="post" enctype="multipart/form-data" action="{% url 'admin_add_category' %}" class="flex flex-col gap-5">
+            {% csrf_token %}
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-2">Category name *</label>
+              <input type="text" name="name" id="category-name" class="input-field" required>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-2">Description</label>
+              <textarea name="description" id="category-desc" class="input-field"></textarea>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-2">Category image</label>
+              <label class="file-field" for="category-image">
+                <input type="file" name="image" id="category-image" accept="image/*" onchange="updateFileName(this,'category-image-name')">
+                <i data-lucide="upload-cloud" class="w-4 h-4 text-primary shrink-0"></i>
+                <span class="text-sm"><span class="text-primary font-semibold">Choose File</span><div class="text-[11px] text-muted" id="category-image-name">No file chosen</div></span>
+              </label>
+            </div>
+            <div class="flex items-center gap-5 mt-2">
+              <button type="submit" id="category-submit-btn" class="btn-primary text-white font-semibold text-sm rounded-xl flex items-center justify-center gap-2 flex-1" style="height:48px;"><i data-lucide="plus-circle" class="w-4 h-4"></i> Add Category</button>
+              <button type="reset" class="text-sm font-semibold text-muted hover:text-ink transition-colors">Clear</button>
+              <button type="button" id="category-cancel-edit" class="text-sm font-semibold text-muted hover:text-ink transition-colors" style="display:none;">Cancel edit</button>
+            </div>
+          </form>
+        </div>
+        <div class="bg-white rounded-xl2 shadow-soft p-8">
+          <h3 class="font-display font-bold text-xl text-ink mb-6">Categories ({{ category_count }})</h3>
+          <div class="overflow-x-auto">
+            <table class="w-full border-collapse">
+              <thead><tr class="text-left">
+                <th class="text-[11px] uppercase tracking-wider text-muted font-bold pb-3 border-b border-border">Image</th>
+                <th class="text-[11px] uppercase tracking-wider text-muted font-bold pb-3 border-b border-border">Name</th>
+                <th class="text-[11px] uppercase tracking-wider text-muted font-bold pb-3 border-b border-border">Description</th>
+                <th class="text-[11px] uppercase tracking-wider text-muted font-bold pb-3 border-b border-border">Books</th>
+                <th class="text-[11px] uppercase tracking-wider text-muted font-bold pb-3 border-b border-border">Actions</th>
+              </tr></thead>
+              <tbody>
+                {% for cat in categories %}
+                <tr class="table-row">
+                  <td class="py-4 border-b border-slate-100 align-middle">{% if cat.image %}<img src="{{ cat.image.url }}" class="w-9 h-9 rounded-lg object-cover" alt="">{% else %}<div class="w-9 h-9 rounded-lg bg-slate-100"></div>{% endif %}</td>
+                  <td class="py-4 border-b border-slate-100 align-middle font-bold text-ink text-sm">{{ cat.name }}</td>
+                  <td class="py-4 border-b border-slate-100 align-middle text-[13px] text-slate-600">{{ cat.description|default:"—"|truncatewords:12 }}</td>
+                  <td class="py-4 border-b border-slate-100 align-middle text-[13px] text-slate-600">{{ cat.book_total }}</td>
+                  <td class="py-4 border-b border-slate-100 align-middle">
+                    <div class="flex items-center gap-2">
+                      <button type="button" class="icon-btn js-edit-category flex items-center gap-1.5 text-xs font-semibold text-primary border border-blue-200 bg-blue-50 px-3 py-2 rounded-lg hover:bg-blue-100"
+                        data-id="{{ cat.id }}" data-name="{{ cat.name|escapejs }}" data-desc="{{ cat.description|default:''|escapejs }}">
+                        <i data-lucide="pencil" class="w-3.5 h-3.5"></i> Edit
+                      </button>
+                      <form method="post" action="{% url 'admin_delete_category' cat.id %}" style="display:inline;" class="js-confirm-delete" data-confirm-name="{{ cat.name|escapejs }}">
+                        {% csrf_token %}
+                        <button type="submit" class="icon-btn flex items-center gap-1.5 text-xs font-semibold text-danger border border-red-200 bg-red-50 px-3 py-2 rounded-lg hover:bg-red-100"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Remove</button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+                {% empty %}<tr><td colspan="5" class="py-10 text-center text-muted italic">No categories yet.</td></tr>{% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- AUTHORS -->
+    <section class="admin-section hidden fade-panel" id="authors-panel">
+      <div class="mb-9">
+        <div class="text-[12px] font-bold tracking-[2px] uppercase text-primary mb-2">Contributors</div>
+        <h1 class="font-display font-extrabold text-4xl md:text-5xl text-ink mb-3">Authors</h1>
+        <p class="text-muted text-[15px] max-w-md leading-relaxed">Keep a record of every author in the library.</p>
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-[30px] items-start">
+        <div class="bg-white rounded-xl2 shadow-soft p-8">
+          <div class="edit-banner items-center justify-between gap-3 bg-blue-50 text-primary-hover border border-blue-200 rounded-xl px-4 py-3 text-sm font-semibold mb-5" id="author-edit-banner">
+            <span>Editing an existing author</span>
+            <button type="button" id="author-cancel-edit-inline" class="underline text-xs font-bold">Cancel edit</button>
+          </div>
+          <h3 id="author-form-heading" class="font-display font-bold text-xl text-ink mb-6">Add an Author</h3>
+          <form id="author-form" method="post" enctype="multipart/form-data" action="{% url 'admin_add_author' %}" class="flex flex-col gap-5">
+            {% csrf_token %}
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-2">Full name *</label>
+              <input type="text" name="name" id="author-name" class="input-field" required>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-2">Nationality</label>
+              <input type="text" name="nationality" id="author-nationality" class="input-field">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-2">Short bio</label>
+              <textarea name="bio" id="author-bio" class="input-field"></textarea>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-2">Author photo</label>
+              <label class="file-field" for="author-image">
+                <input type="file" name="image" id="author-image" accept="image/*" onchange="updateFileName(this,'author-image-name')">
+                <i data-lucide="upload-cloud" class="w-4 h-4 text-primary shrink-0"></i>
+                <span class="text-sm"><span class="text-primary font-semibold">Choose File</span><div class="text-[11px] text-muted" id="author-image-name">No file chosen</div></span>
+              </label>
+            </div>
+            <div class="flex items-center gap-5 mt-2">
+              <button type="submit" id="author-submit-btn" class="btn-primary text-white font-semibold text-sm rounded-xl flex items-center justify-center gap-2 flex-1" style="height:48px;"><i data-lucide="plus-circle" class="w-4 h-4"></i> Add Author</button>
+              <button type="reset" class="text-sm font-semibold text-muted hover:text-ink transition-colors">Clear</button>
+              <button type="button" id="author-cancel-edit" class="text-sm font-semibold text-muted hover:text-ink transition-colors" style="display:none;">Cancel edit</button>
+            </div>
+          </form>
+        </div>
+        <div class="bg-white rounded-xl2 shadow-soft p-8">
+          <h3 class="font-display font-bold text-xl text-ink mb-6">Authors ({{ author_count }})</h3>
+          <div class="overflow-x-auto">
+            <table class="w-full border-collapse">
+              <thead><tr class="text-left">
+                <th class="text-[11px] uppercase tracking-wider text-muted font-bold pb-3 border-b border-border">Photo</th>
+                <th class="text-[11px] uppercase tracking-wider text-muted font-bold pb-3 border-b border-border">Name</th>
+                <th class="text-[11px] uppercase tracking-wider text-muted font-bold pb-3 border-b border-border">Nationality</th>
+                <th class="text-[11px] uppercase tracking-wider text-muted font-bold pb-3 border-b border-border">Actions</th>
+              </tr></thead>
+              <tbody>
+                {% for a in authors %}
+                <tr class="table-row">
+                  <td class="py-4 border-b border-slate-100 align-middle">{% if a.image %}<img src="{{ a.image.url }}" class="w-9 h-9 rounded-full object-cover" alt="">{% else %}<div class="w-9 h-9 rounded-full bg-blue-50"></div>{% endif %}</td>
+                  <td class="py-4 border-b border-slate-100 align-middle font-bold text-ink text-sm">{{ a.name }}</td>
+                  <td class="py-4 border-b border-slate-100 align-middle text-[13px] text-slate-600">{{ a.nationality|default:"—" }}</td>
+                  <td class="py-4 border-b border-slate-100 align-middle">
+                    <div class="flex items-center gap-2">
+                      <button type="button" class="icon-btn js-edit-author flex items-center gap-1.5 text-xs font-semibold text-primary border border-blue-200 bg-blue-50 px-3 py-2 rounded-lg hover:bg-blue-100"
+                        data-id="{{ a.id }}" data-name="{{ a.name|escapejs }}" data-nationality="{{ a.nationality|default:''|escapejs }}" data-bio="{{ a.bio|default:''|escapejs }}">
+                        <i data-lucide="pencil" class="w-3.5 h-3.5"></i> Edit
+                      </button>
+                      <form method="post" action="{% url 'admin_delete_author' a.id %}" style="display:inline;" class="js-confirm-delete" data-confirm-name="{{ a.name|escapejs }}">
+                        {% csrf_token %}
+                        <button type="submit" class="icon-btn flex items-center gap-1.5 text-xs font-semibold text-danger border border-red-200 bg-red-50 px-3 py-2 rounded-lg hover:bg-red-100"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Remove</button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+                {% empty %}<tr><td colspan="4" class="py-10 text-center text-muted italic">No authors yet.</td></tr>{% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ABOUT -->
+    <section class="admin-section hidden fade-panel" id="about-panel">
+      <div class="mb-9">
+        <div class="text-[12px] font-bold tracking-[2px] uppercase text-primary mb-2">Site content</div>
+        <h1 class="font-display font-extrabold text-4xl md:text-5xl text-ink mb-3">About Us</h1>
+        <p class="text-muted text-[15px] max-w-md leading-relaxed">Edit the story visitors see on the public About Us page.</p>
+      </div>
+      <div class="bg-white rounded-xl2 shadow-soft p-8 max-w-[760px]">
+        <form method="post" action="{% url 'admin_save_about' %}" class="flex flex-col gap-5">
+          {% csrf_token %}
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-2">Heading</label>
+            <input type="text" name="heading" id="about-heading" value="{{ about.heading }}" class="input-field">
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-slate-700 mb-2">Story</label>
+            <textarea name="body" id="about-body" class="input-field" style="min-height:160px;" maxlength="800">{{ about.body }}</textarea>
+            <div class="text-[12px] text-muted text-right mt-1"><span id="about-count">0</span>/800</div>
+          </div>
+          <div class="flex items-center gap-5 mt-2">
+            <button type="submit" class="btn-primary text-white font-semibold text-sm rounded-xl flex items-center justify-center gap-2" style="height:48px; padding:0 28px;"><i data-lucide="save" class="w-4 h-4"></i> Save Changes</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- ACCESS -->
+    <section class="admin-section hidden fade-panel" id="access-panel">
+      <div class="mb-9">
+        <div class="text-[12px] font-bold tracking-[2px] uppercase text-primary mb-2">Security</div>
+        <h1 class="font-display font-extrabold text-4xl md:text-5xl text-ink mb-3">Access Management</h1>
+        <p class="text-muted text-[15px] max-w-md leading-relaxed">Control who can sign in and what they're allowed to manage.</p>
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-[30px] items-start">
+        <div class="bg-white rounded-xl2 shadow-soft p-8">
+          <h3 class="font-display font-bold text-xl text-ink mb-6">Add a Team Member</h3>
+          <form method="post" action="{% url 'admin_grant_access' %}" class="flex flex-col gap-5">
+            {% csrf_token %}
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-2">Full name *</label>
+              <input type="text" name="name" class="input-field" required>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-2">Email *</label>
+              <input type="email" name="email" class="input-field" required>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-2">Role *</label>
+              <select name="role" class="input-field" required>
+                <option value="Admin">Admin — full access</option>
+                <option value="Author" selected>Author — manage own books</option>
+                <option value="Viewer">Viewer — read only</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-slate-700 mb-2">Temporary password *</label>
+              <input type="password" name="password" class="input-field" required>
+            </div>
+            <div class="flex items-center gap-5 mt-2">
+              <button type="submit" class="btn-primary text-white font-semibold text-sm rounded-xl flex items-center justify-center gap-2 flex-1" style="height:48px;"><i data-lucide="shield-check" class="w-4 h-4"></i> Grant Access</button>
+            </div>
+          </form>
+        </div>
+        <div class="bg-white rounded-xl2 shadow-soft p-8">
+          <h3 class="font-display font-bold text-xl text-ink mb-6">Team ({{ team_count }})</h3>
+          <div class="overflow-x-auto">
+            <table class="w-full border-collapse">
+              <thead><tr class="text-left">
+                <th class="text-[11px] uppercase tracking-wider text-muted font-bold pb-3 border-b border-border">Name</th>
+                <th class="text-[11px] uppercase tracking-wider text-muted font-bold pb-3 border-b border-border">Email</th>
+                <th class="text-[11px] uppercase tracking-wider text-muted font-bold pb-3 border-b border-border">Role</th>
+                <th class="text-[11px] uppercase tracking-wider text-muted font-bold pb-3 border-b border-border">Status</th>
+                <th class="text-[11px] uppercase tracking-wider text-muted font-bold pb-3 border-b border-border">Actions</th>
+              </tr></thead>
+              <tbody>
+                {% for member in team %}
+                <tr class="table-row">
+                  <td class="py-4 border-b border-slate-100 align-middle font-bold text-ink text-sm">{{ member.name }}</td>
+                  <td class="py-4 border-b border-slate-100 align-middle text-[13px] text-slate-600">{{ member.email }}</td>
+                  <td class="py-4 border-b border-slate-100 align-middle">
+                    <span class="text-[12px] font-bold px-3 py-1.5 rounded-full {% if member.role == 'Admin' %}tag-admin{% elif member.role == 'Editor' %}tag-editor{% else %}tag-viewer{% endif %}">{{ member.role }}</span>
+                  </td>
+                  <td class="py-4 border-b border-slate-100 align-middle text-[13px] text-slate-600">{{ member.status }}</td>
+                  <td class="py-4 border-b border-slate-100 align-middle">
+                    <div class="flex items-center gap-2">
+                      <form method="post" action="{% url 'admin_toggle_access' member.id %}" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="icon-btn text-xs font-semibold text-primary border border-blue-200 bg-blue-50 px-3 py-2 rounded-lg hover:bg-blue-100">{% if member.status == 'Active' %}Suspend{% else %}Reactivate{% endif %}</button>
+                      </form>
+                      <form method="post" action="{% url 'admin_remove_access' member.id %}" style="display:inline;" class="js-confirm-delete" data-confirm-name="{{ member.name|escapejs }}">
+                        {% csrf_token %}
+                        <button type="submit" class="icon-btn text-xs font-semibold text-danger border border-red-200 bg-red-50 px-3 py-2 rounded-lg hover:bg-red-100">Remove</button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+                {% empty %}<tr><td colspan="5" class="py-10 text-center text-muted italic">No team members yet.</td></tr>{% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+  lucide.createIcons();
+  const adminRoot = document.getElementById('admin-panel-root');
+  const $ = (s) => adminRoot.querySelector(s);
+  const $all = (s) => adminRoot.querySelectorAll(s);
+
+  $all('[data-panel]').forEach(link => {
+    link.addEventListener('click', () => {
+      $all('[data-panel]').forEach(l => l.classList.remove('active'));
+      $all('.admin-section').forEach(p => p.classList.add('hidden'));
+      link.classList.add('active');
+      document.getElementById(link.dataset.panel).classList.remove('hidden');
+    });
+  });
+
+  function updateFileName(input, targetId){
+    const label = input.files && input.files.length ? input.files[0].name : 'No file chosen';
+    document.getElementById(targetId).textContent = label;
+  }
+
+  $all('.js-confirm-delete').forEach(form => {
+    form.addEventListener('submit', (e) => {
+      const name = form.dataset.confirmName || 'this item';
+      if (!confirm(`Remove "${name}"?`)) e.preventDefault();
+    });
+  });
+
+  // ---- Book pricing toggle + edit mode ----
+  const btnFree = $('#btn-free'), btnPaid = $('#btn-paid'), priceFields = $('#price-fields'), pricingHidden = $('#pricing-type-hidden');
+  function setPricing(type){
+    pricingHidden.value = type;
+    if(type === 'Free'){ btnFree.classList.add('active'); btnPaid.classList.remove('active'); priceFields.classList.remove('show'); }
+    else { btnPaid.classList.add('active'); btnFree.classList.remove('active'); priceFields.classList.add('show'); }
+  }
+  btnFree.addEventListener('click', () => setPricing('Free'));
+  btnPaid.addEventListener('click', () => setPricing('Paid'));
+
+  const bookForm = $('#book-form');
+  const bookFormOriginalAction = bookForm.action;
+  function editBook(id, title, author, categoryId, isbn, isPaid, price, discount){
+    $('#book-title').value = title; $('#book-author').value = author; $('#book-category').value = categoryId; $('#book-isbn').value = isbn;
+    setPricing(isPaid ? 'Paid' : 'Free'); $('#book-price').value = price || ''; $('#book-discount').value = discount || '';
+    bookForm.action = `/management/admin/book/${id}/edit/`;
+    $('#book-form-heading').textContent = 'Edit Book';
+    $('#book-submit-btn').innerHTML = '<i data-lucide="check-circle" class="w-4 h-4"></i> Update Book';
+    $('#book-edit-banner').classList.add('show'); $('#book-cancel-edit').style.display = 'inline-flex';
+    lucide.createIcons();
+    $('#books-panel .bg-white').scrollIntoView({behavior:'smooth', block:'start'});
+  }
+  function cancelBookEdit(){
+    bookForm.reset(); bookForm.action = bookFormOriginalAction; setPricing('Free');
+    document.getElementById('book-image-name').textContent = 'No file chosen';
+    document.getElementById('book-pdf-name').textContent = 'No file chosen';
+    $('#book-form-heading').textContent = 'Add a Book';
+    $('#book-submit-btn').innerHTML = '<i data-lucide="plus-circle" class="w-4 h-4"></i> Add Book';
+    $('#book-edit-banner').classList.remove('show'); $('#book-cancel-edit').style.display = 'none';
+    lucide.createIcons();
+  }
+  $('#book-cancel-edit').addEventListener('click', cancelBookEdit);
+  $('#book-cancel-edit-inline').addEventListener('click', cancelBookEdit);
+  $all('.js-edit-book').forEach(btn => {
+    btn.addEventListener('click', () => {
+      editBook(btn.dataset.id, btn.dataset.title, btn.dataset.author, btn.dataset.category, btn.dataset.isbn, btn.dataset.paid === 'true', btn.dataset.price, btn.dataset.discount);
+    });
+  });
+
+  // ---- Category edit mode ----
+  const categoryForm = $('#category-form');
+  const categoryFormOriginalAction = categoryForm.action;
+  function editCategory(id, name, desc){
+    $('#category-name').value = name; $('#category-desc').value = desc;
+    categoryForm.action = `/management/admin/category/${id}/edit/`;
+    $('#category-form-heading').textContent = 'Edit Category';
+    $('#category-submit-btn').innerHTML = '<i data-lucide="check-circle" class="w-4 h-4"></i> Update Category';
+    $('#category-edit-banner').classList.add('show'); $('#category-cancel-edit').style.display = 'inline-flex';
+    lucide.createIcons();
+    $('#categories-panel .bg-white').scrollIntoView({behavior:'smooth', block:'start'});
+  }
+  function cancelCategoryEdit(){
+    categoryForm.reset(); categoryForm.action = categoryFormOriginalAction;
+    document.getElementById('category-image-name').textContent = 'No file chosen';
+    $('#category-form-heading').textContent = 'Add a Category';
+    $('#category-submit-btn').innerHTML = '<i data-lucide="plus-circle" class="w-4 h-4"></i> Add Category';
+    $('#category-edit-banner').classList.remove('show'); $('#category-cancel-edit').style.display = 'none';
+    lucide.createIcons();
+  }
+  $('#category-cancel-edit').addEventListener('click', cancelCategoryEdit);
+  $('#category-cancel-edit-inline').addEventListener('click', cancelCategoryEdit);
+  $all('.js-edit-category').forEach(btn => {
+    btn.addEventListener('click', () => { editCategory(btn.dataset.id, btn.dataset.name, btn.dataset.desc); });
+  });
+
+  // ---- Author edit mode ----
+  const authorForm = $('#author-form');
+  const authorFormOriginalAction = authorForm.action;
+  function editAuthor(id, name, nationality, bio){
+    $('#author-name').value = name; $('#author-nationality').value = nationality; $('#author-bio').value = bio;
+    authorForm.action = `/management/admin/author/${id}/edit/`;
+    $('#author-form-heading').textContent = 'Edit Author';
+    $('#author-submit-btn').innerHTML = '<i data-lucide="check-circle" class="w-4 h-4"></i> Update Author';
+    $('#author-edit-banner').classList.add('show'); $('#author-cancel-edit').style.display = 'inline-flex';
+    lucide.createIcons();
+    $('#authors-panel .bg-white').scrollIntoView({behavior:'smooth', block:'start'});
+  }
+  function cancelAuthorEdit(){
+    authorForm.reset(); authorForm.action = authorFormOriginalAction;
+    document.getElementById('author-image-name').textContent = 'No file chosen';
+    $('#author-form-heading').textContent = 'Add an Author';
+    $('#author-submit-btn').innerHTML = '<i data-lucide="plus-circle" class="w-4 h-4"></i> Add Author';
+    $('#author-edit-banner').classList.remove('show'); $('#author-cancel-edit').style.display = 'none';
+    lucide.createIcons();
+  }
+  $('#author-cancel-edit').addEventListener('click', cancelAuthorEdit);
+  $('#author-cancel-edit-inline').addEventListener('click', cancelAuthorEdit);
+  $all('.js-edit-author').forEach(btn => {
+    btn.addEventListener('click', () => { editAuthor(btn.dataset.id, btn.dataset.name, btn.dataset.nationality, btn.dataset.bio); });
+  });
+
+  // ---- About char count ----
+  const aboutBody = $('#about-body');
+  function updateCharCount(){ $('#about-count').textContent = aboutBody.value.length; }
+  if(aboutBody){ aboutBody.addEventListener('input', updateCharCount); updateCharCount(); }
+</script>
+{% endblock %}

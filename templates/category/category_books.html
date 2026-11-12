@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ category_name }} - Sanza Library{% endblock %}
+{% block content %}
+<section class="section" style="padding-top:32px;">
+    <div class="section-head">
+        <div>
+            <h2><i class="{{ icon }}"></i> {{ category_name }}</h2>
+            {% if book_type %}
+            <p style="color:#888; font-size:13px; margin-top:4px;">Showing {% if book_type == 'free' %}Free{% else %}Paid{% endif %} books only</p>
+            {% endif %}
+        </div>
+        <a href="{% url 'home' %}" style="color:#6c5ce7; text-decoration:none; font-weight:600;">
+            <i class="fa-solid fa-chevron-left"></i> Back to Home
+        </a>
+    </div>
+    <div class="book-row" style="flex-wrap:wrap; overflow:visible;">
+        {% for card in book_cards %}
+        <div class="book-card" data-cat="{{ card.obj.category|default:'' }}" onclick="window.location.href='{% url 'book_detail' card.obj.id %}'">
+            <div class="book-cover {% if not card.obj.cover_image %}{{ card.cover_class }}{% endif %}"
+                 {% if card.obj.cover_image %}style="background-image:url('{{ card.obj.cover_image.url }}'); background-size:cover; background-position:center;"{% endif %}>
+                {% if not card.obj.cover_image %}
+                    <span>{{ card.obj.author }}</span>
+                    <h4>{{ card.obj.title }}</h4>
+                {% endif %}
+            </div>
+            <div class="book-info">
+                <h3>{{ card.obj.title }}</h3>
+                <p class="author">{{ card.obj.author }}</p>
+                <div class="book-meta-line">
+                    <p class="rating"><i class="fa-solid fa-circle-check"></i> {{ card.obj.get_status_display }}</p>
+                    {% if card.obj.is_paid %}
+                    <span class="price-badge badge-paid"><i class="fa-solid fa-lock"></i> ₹{{ card.obj.final_price }}</span>
+                    {% else %}
+                    <span class="price-badge badge-free"><i class="fa-solid fa-unlock"></i> Free</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <p class="empty-state">There are no books in this category yet..</p>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

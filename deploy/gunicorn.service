@@ -1,0 +1,19 @@
+[Unit]
+Description=Gunicorn for Sanza E-library
+After=network.target postgresql.service
+
+[Service]
+User=ubuntu
+Group=www-data
+WorkingDirectory=/home/ubuntu/E-library
+ExecStart=/home/ubuntu/E-library/venv/bin/gunicorn \
+    --workers 3 \
+    --timeout 120 \
+    --bind unix:/run/gunicorn-sanza/gunicorn.sock \
+    ebook.wsgi:application
+RuntimeDirectory=gunicorn-sanza
+RuntimeDirectoryMode=0775
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,1259 @@
+from decimal import Decimal
+
+import razorpay
+from django.conf import settings
+from django.contrib import messages
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.models import User
+from django.db.models import Avg, Count
+from django.http import FileResponse, Http404, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
+from django.views.decorators.csrf import csrf_exempt, csrf_protect
+from django.views.decorators.http import require_POST
+from django.core.mail import EmailMultiAlternatives
+from django.template.loader import render_to_string
+from .models import Book, Category, Author
+from .models import Book, Coupon, CouponUsage, Order, Review, Wishlist, MyLibrary
+from django.db.models import Avg, Count
+from django.db.models.functions import Coalesce
+from django.db.models import Value, FloatField
+from django.db.models import Avg, Count, Value, FloatField, Q
+from django.db.models.functions import Coalesce
+from .models import ContactMessage
+from django.contrib.auth.models import Group
+from .models import Discount, AboutPage
+
+razorpay_client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
+
+
+# ---------- Role helpers (if not already added) ----------
+def _is_staff_user(user):
+    return user.is_authenticated and (user.is_staff or user.is_superuser)
+
+
+def _is_author_user(user):
+    return user.is_authenticated and user.groups.filter(name='Author').exists()
+
+
+def _is_management_user(user):
+    return _is_staff_user(user) or _is_author_user(user)
+
+
+def _get_user_role(user):
+    if _is_staff_user(user):
+        return 'admin'
+    elif _is_author_user(user):
+        return 'author'
+    return 'user'
+
+
+def about(request):
+    return render(request, 'about.html', {
+        'total_books': Book.objects.count(),
+        'total_categories': Category.objects.count(),
+        'total_authors': Author.objects.count(),
+    })
+
+def signup_view(request):
+    if request.method == 'POST':
+        fullname = request.POST.get('fullname', '').strip()
+        email = request.POST.get('email', '').strip().lower()
+        password1 = request.POST.get('password1', '')
+        password2 = request.POST.get('password2', '')
+
+        signup_redirect = f"{reverse('home')}?auth=signup"
+
+        if not fullname or not email or not password1:
+            messages.error(request, "Please fill in all fields.")
+            return redirect(signup_redirect)
+
+        if password1 != password2:
+            messages.error(request, "Passwords do not match.")
+            return redirect(signup_redirect)
+
+        if len(password1) < 6:
+            messages.error(request, "Password must be at least 6 characters.")
+            return redirect(signup_redirect)
+
+        if User.objects.filter(email__iexact=email).exists():
+            messages.error(request, "An account with this email already exists.")
+            return redirect(signup_redirect)
+
+        base_username = email.split('@')[0]
+        username = base_username
+        suffix = 1
+        while User.objects.filter(username=username).exists():
+            suffix += 1
+            username = f"{base_username}{suffix}"
+
+        user = User.objects.create_user(username=username, email=email, password=password1)
+        user.first_name = fullname
+        user.save()
+
+        # Sending the welcome email here - even if it fails, the signup
+        # itself shouldn't fail, so we wrap it in a try/except.
+        try:
+            send_welcome_email(fullname, email)
+        except Exception as e:
+            # Even if the email fails, the account is already created,
+            # so we just log it silently and continue.
+            print(f"Welcome email failed for {email}: {e}")
+
+        messages.success(request, "Account created successfully. Please log in.")
+        return redirect(f"{reverse('home')}?auth=login")
+
+    return redirect('home')
+
+
+def books_view(request):
+    books = Book.objects.all()
+    return render(request, 'books.html', {'books': books})
+
+def send_welcome_email(fullname, email):
+    subject = 'Welcome to Sanza Library!'
+    html_content = render_to_string('emails/welcome_email.html', {'fullname': fullname})
+    plain_text = f"Hi {fullname},\n\nWelcome to Sanza Library. Read More. Learn More. Grow More."
+
+    msg = EmailMultiAlternatives(
+        subject,
+        plain_text,
+        settings.DEFAULT_FROM_EMAIL,
+        [email],
+    )
+    msg.attach_alternative(html_content, "text/html")
+    msg.send()
+
+def login_view(request):
+    if request.method == 'POST':
+        email = request.POST.get('email', '').strip().lower()
+        password = request.POST.get('password', '')
+
+        login_redirect = f"{reverse('home')}?auth=login"
+
+        user = None
+        matched = User.objects.filter(email__iexact=email).first()
+        if matched:
+            user = authenticate(request, username=matched.username, password=password)
+
+        if user is not None:
+            login(request, user)
+            # Server decides where each account belongs based on role:
+            #   admin  -> management dashboard (full access)
+            #   author -> management dashboard (limited access)
+            #   user   -> regular reader home page
+            if _is_management_user(user):
+                return redirect('management')
+            return redirect('home')
+
+        messages.error(request, "Invalid email or password.")
+        return redirect(login_redirect)
+
+    return redirect('home')
+
+
+def logout_view(request):
+    logout(request)
+    messages.success(request, "You have been logged out.")
+    return redirect('home')
+
+
+# Known category -> (icon class, colour class) mapping used only for
+# styling. Any category that isn't in this list still shows up with a
+# sensible default icon, so adding a brand-new category from the admin
+# dashboard never breaks the homepage.
+CATEGORY_STYLES = {
+    'fiction':      ('fa-solid fa-book-open',   'cat-fiction'),
+    'non-fiction':  ('fa-solid fa-user',        'cat-nonfiction'),
+    'science':      ('fa-solid fa-flask',       'cat-science'),
+    'technology':   ('fa-solid fa-display',     'cat-tech'),
+    'business':     ('fa-solid fa-briefcase',   'cat-business'),
+    'self-help':    ('fa-solid fa-brain',       'cat-selfhelp'),
+    'history':      ('fa-solid fa-landmark',    'cat-history'),
+    'children':     ('fa-solid fa-face-smile',  'cat-children'),
+}
+DEFAULT_CATEGORY_STYLE = ('fa-solid fa-tag', 'cat-fiction')
+
+# Cover gradient classes cycle through for books that don't have an
+# uploaded cover image, so the grid still looks varied.
+COVER_CLASSES = ['cover1', 'cover2', 'cover3', 'cover4', 'cover5', 'cover6']
+
+
+def category_books_view(request, category_name):
+    books = Book.objects.filter(category__name__iexact=category_name)
+    book_type = request.GET.get('type')
+    if book_type == 'free':
+        books = books.filter(is_paid=False)
+    elif book_type == 'paid':
+        books = books.filter(is_paid=True)
+    book_cards = []
+    for i, book in enumerate(books):
+        book_cards.append({
+            'obj': book,
+            'cover_class': COVER_CLASSES[i % len(COVER_CLASSES)],
+        })
+    icon, css_class = CATEGORY_STYLES.get(category_name.strip().lower(), DEFAULT_CATEGORY_STYLE)
+    return render(request, 'category/category_books.html', {
+        'book_cards': book_cards,
+        'category_name': category_name,
+        'icon': icon,
+        'css_class': css_class,
+        'book_type': book_type,
+    })
+
+
+def free_books_view(request):
+    books = Book.objects.filter(is_paid=False)
+    book_cards = []
+    for i, book in enumerate(books):
+        book_cards.append({
+            'obj': book,
+            'cover_class': COVER_CLASSES[i % len(COVER_CLASSES)],
+        })
+    return render(request, 'category_books.html', {
+        'book_cards': book_cards,
+        'category_name': 'Free Books',
+        'icon': 'fa-solid fa-gift',
+        'css_class': 'cat-nonfiction',
+    })
+
+
+def paid_books_view(request):
+    books = Book.objects.filter(is_paid=True)
+    book_cards = []
+    for i, book in enumerate(books):
+        book_cards.append({
+            'obj': book,
+            'cover_class': COVER_CLASSES[i % len(COVER_CLASSES)],
+        })
+    return render(request, 'category/category_books.html', {
+        'book_cards': book_cards,
+        'category_name': 'Paid Books',
+        'icon': 'fa-solid fa-crown',
+        'css_class': 'cat-tech',
+    })
+
+
+def free_categories_view(request):
+    category_qs = (
+        Category.objects.filter(books__is_paid=False)
+        .distinct()
+        .order_by('name')
+    )
+    categories = []
+    for cat in category_qs:
+        icon, css_class = CATEGORY_STYLES.get(cat.name.strip().lower(), DEFAULT_CATEGORY_STYLE)
+        categories.append({
+            'name': cat.name,
+            'icon': icon,
+            'css_class': css_class,
+            'image_url': cat.image.url if cat.image else None,
+        })
+    return render(request, 'type_categories.html', {
+        'categories': categories,
+        'page_title': 'Free Books',
+        'book_type': 'free',
+    })
+
+
+def paid_categories_view(request):
+    category_qs = (
+        Category.objects.filter(books__is_paid=True)
+        .distinct()
+        .order_by('name')
+    )
+    categories = []
+    for cat in category_qs:
+        icon, css_class = CATEGORY_STYLES.get(cat.name.strip().lower(), DEFAULT_CATEGORY_STYLE)
+        categories.append({
+            'name': cat.name,
+            'icon': icon,
+            'css_class': css_class,
+            'image_url': cat.image.url if cat.image else None,
+        })
+    return render(request, 'type_categories.html', {
+        'categories': categories,
+        'page_title': 'Paid Books',
+        'book_type': 'paid',
+    })
+
+
+def all_books_view(request):
+    books = Book.objects.all()
+    book_cards = []
+    for i, book in enumerate(books):
+        book_cards.append({
+            'obj': book,
+            'cover_class': COVER_CLASSES[i % len(COVER_CLASSES)],
+        })
+    return render(request, 'category/category_books.html', {
+        'book_cards': book_cards,
+        'category_name': 'Featured Books',
+        'icon': 'fa-solid fa-star',
+        'css_class': 'cat-business',
+    })
+
+
+def recent_books_view(request):
+    books = Book.objects.all().order_by('-created_at')
+    book_cards = []
+    for i, book in enumerate(books):
+        book_cards.append({
+            'obj': book,
+            'cover_class': COVER_CLASSES[i % len(COVER_CLASSES)],
+        })
+    return render(request, 'category_books.html', {
+        'book_cards': book_cards,
+        'category_name': 'Recently Added',
+        'icon': 'fa-solid fa-clock',
+        'css_class': 'cat-science',
+    })
+
+
+def popular_books_view(request):
+    books = Book.objects.annotate(avg_rating=Avg('reviews__rating')).order_by('-avg_rating')
+    book_cards = []
+    for i, book in enumerate(books):
+        book_cards.append({
+            'obj': book,
+            'cover_class': COVER_CLASSES[i % len(COVER_CLASSES)],
+        })
+    return render(request, 'category/category_books.html', {
+        'book_cards': book_cards,
+        'category_name': 'Popular Books',
+        'icon': 'fa-solid fa-fire',
+        'css_class': 'cat-selfhelp',
+    })
+
+
+def home_view(request):
+    books = Book.objects.all()[:24]
+
+    book_cards = []
+    for i, book in enumerate(books):
+        book_cards.append({
+            'obj': book,
+            'cover_class': COVER_CLASSES[i % len(COVER_CLASSES)],
+        })
+
+    categories = []
+    category_qs = (
+        Category.objects.filter(books__isnull=False)
+        .distinct()
+        .order_by('name')
+    )
+    for cat in category_qs:
+        icon, css_class = CATEGORY_STYLES.get(cat.name.strip().lower(), DEFAULT_CATEGORY_STYLE)
+        categories.append({
+            'name': cat.name,
+            'icon': icon,
+            'css_class': css_class,
+            'image_url': cat.image.url if cat.image else None,
+        })
+
+    free_books_qs = Book.objects.filter(is_paid=False).order_by('-created_at')[:24]
+    free_book_cards = []
+    for i, book in enumerate(free_books_qs):
+        free_book_cards.append({
+            'obj': book,
+            'cover_class': COVER_CLASSES[i % len(COVER_CLASSES)],
+        })
+
+    paid_books_qs = Book.objects.filter(is_paid=True).order_by('-created_at')[:24]
+    paid_book_cards = []
+    for i, book in enumerate(paid_books_qs):
+        paid_book_cards.append({
+            'obj': book,
+            'cover_class': COVER_CLASSES[i % len(COVER_CLASSES)],
+        })
+
+    recent_books_qs = Book.objects.all().order_by('-created_at')[:24]
+    recent_book_cards = []
+    for i, book in enumerate(recent_books_qs):
+        recent_book_cards.append({
+            'obj': book,
+            'cover_class': COVER_CLASSES[i % len(COVER_CLASSES)],
+        })
+
+    popular_books_qs = (
+        Book.objects.annotate(avg_rating=Avg('reviews__rating'))
+        .order_by('-avg_rating')[:24]
+    )
+    popular_book_cards = []
+    for i, book in enumerate(popular_books_qs):
+        popular_book_cards.append({
+            'obj': book,
+            'cover_class': COVER_CLASSES[i % len(COVER_CLASSES)],
+        })
+
+    return render(request, 'home.html', {
+        'book_cards': book_cards,
+        'categories': categories,
+        'free_book_cards': free_book_cards,
+        'paid_book_cards': paid_book_cards,
+        'recent_book_cards': recent_book_cards,
+        'popular_book_cards': popular_book_cards,
+    })
+
+
+# ============================================================
+# ADD THESE TO views.py (near management_view)
+# ============================================================
+
+
+
+
+# ---------- Main management entry point ----------
+@login_required(login_url='home')
+@user_passes_test(_is_management_user, login_url='home')
+def management_view(request):
+    role = _get_user_role(request.user)
+
+    if role == 'admin':
+        return render(request, 'account/management.html', {
+            'role': role,
+            'user_name': request.user.first_name or request.user.username,
+            'user_email': request.user.email,
+        })
+
+    # ---- Author branch: gather this author's own data ----
+    my_books = (
+        Book.objects.filter(created_by=request.user)
+        .select_related('category')
+        .order_by('-created_at')
+    )
+    my_reviews = (
+        Review.objects.filter(book__created_by=request.user)
+        .select_related('user', 'book')
+        .order_by('-created_at')
+    )
+    categories = Category.objects.all().order_by('name')
+
+    context = {
+        'role': role,
+        'user_name': request.user.first_name or request.user.username,
+        'user_email': request.user.email,
+        'my_books': my_books,
+        'my_reviews': my_reviews,
+        'categories': categories,
+        'book_count': my_books.count(),
+        'review_count': my_reviews.count(),
+    }
+    return render(request, 'account/author_management.html', context)
+
+
+# ---------- Author: Add book ----------
+@login_required(login_url='home')
+@user_passes_test(_is_author_user, login_url='home')
+@require_POST
+def author_add_book(request):
+    title = request.POST.get('title', '').strip()
+    category_id = request.POST.get('category')
+    isbn = request.POST.get('isbn', '').strip()
+    is_paid = request.POST.get('pricing_type') == 'Paid'
+    price = request.POST.get('price') or 0
+    discount = request.POST.get('discount') or 0
+    cover_image = request.FILES.get('cover_image')
+    pdf_file = request.FILES.get('pdf_file')
+
+    if not title or not category_id:
+        messages.error(request, 'Title and category are required.')
+        return redirect('management')
+
+    category = get_object_or_404(Category, id=category_id)
+
+    book = Book.objects.create(
+        title=title,
+        category=category,
+        isbn=isbn,
+        is_paid=is_paid,
+        price=price if is_paid else 0,
+        cover_image=cover_image,
+        pdf_file=pdf_file,
+        created_by=request.user,      # ties book to the logged-in author
+    )
+    if is_paid and Decimal(str(discount)) > 0:
+        Discount.objects.create(
+            book=book,
+            discount_type='percentage',
+            value=discount,
+        )
+    messages.success(request, f'"{book.title}" added to the catalogue.')
+    return redirect('management')
+
+
+# ---------- Author: Edit own book ----------
+@login_required(login_url='home')
+@user_passes_test(_is_author_user, login_url='home')
+@require_POST
+def author_edit_book(request, book_id):
+    # get_object_or_404 with created_by=request.user means an author can
+    # NEVER edit another author's book, even by guessing the URL/id.
+    book = get_object_or_404(Book, id=book_id, created_by=request.user)
+
+    book.title = request.POST.get('title', book.title).strip()
+    category_id = request.POST.get('category')
+    if category_id:
+        book.category = get_object_or_404(Category, id=category_id)
+    book.isbn = request.POST.get('isbn', book.isbn).strip()
+
+    is_paid = request.POST.get('pricing_type') == 'Paid'
+    book.is_paid = is_paid
+    book.price = request.POST.get('price') or 0 if is_paid else 0
+    discount_val = request.POST.get('discount') or 0
+    if is_paid and Decimal(str(discount_val)) > 0:
+        Discount.objects.update_or_create(
+            book=book,
+            defaults={'discount_type': 'percentage', 'value': discount_val},
+        )
+    else:
+        Discount.objects.filter(book=book).delete()
+
+    if request.FILES.get('cover_image'):
+        book.cover_image = request.FILES.get('cover_image')
+    if request.FILES.get('pdf_file'):
+        book.pdf_file = request.FILES.get('pdf_file')
+
+    book.save()
+    messages.success(request, f'"{book.title}" updated.')
+    return redirect('management')
+
+
+# ---------- Author: Delete own book ----------
+@login_required(login_url='home')
+@user_passes_test(_is_author_user, login_url='home')
+@require_POST
+def author_delete_book(request, book_id):
+    book = get_object_or_404(Book, id=book_id, created_by=request.user)
+    title = book.title
+    book.delete()
+    messages.success(request, f'"{title}" removed.')
+    return redirect('management')
+
+
+def book_detail_view(request, book_id):
+    book = get_object_or_404(Book.objects.select_related('discount'), id=book_id)
+
+    reviews = book.reviews.select_related('user').all()
+    agg = reviews.aggregate(avg_rating=Avg('rating'), review_count=Count('id'))
+    avg_rating = round(agg['avg_rating'] or 0, 1)
+    review_count = agg['review_count']
+
+    is_wishlisted = False
+    can_review = False
+    already_reviewed = False
+    in_library = False          # <-- newly added
+
+    if request.user.is_authenticated:
+        is_wishlisted = Wishlist.objects.filter(user=request.user, book=book).exists()
+        already_reviewed = Review.objects.filter(user=request.user, book=book).exists()
+
+        if book.is_paid:
+            can_review = Order.objects.filter(user=request.user, book=book, status='paid').exists()
+        else:
+            can_review = True
+            in_library = MyLibrary.objects.filter(user=request.user, book=book).exists()   # <-- newly added
+
+    related_books = (
+        Book.objects.filter(category=book.category)
+        .exclude(id=book.id)
+        .annotate(
+            avg_rating=Coalesce(Avg('reviews__rating'), Value(5.0), output_field=FloatField()),
+            review_count=Count('reviews', distinct=True)
+        )
+        .order_by('-avg_rating', '-review_count')[:10]
+        if book.category else []
+    )
+
+    context = {
+        'book': book,
+        'reviews': reviews,
+        'avg_rating': avg_rating,
+        'review_count': review_count,
+        'is_wishlisted': is_wishlisted,
+        'can_review': can_review,
+        'already_reviewed': already_reviewed,
+        'related_books': related_books,
+        'in_library': in_library,
+    }
+    return render(request, 'book_detail.html', context)
+
+
+@login_required
+def toggle_wishlist(request, book_id):
+    book = get_object_or_404(Book, id=book_id)
+    wishlist_item, created = Wishlist.objects.get_or_create(user=request.user, book=book)
+    if not created:
+        wishlist_item.delete()
+        wishlisted = False
+    else:
+        wishlisted = True
+    return JsonResponse({'wishlisted': wishlisted})
+
+
+@login_required
+def add_review(request, book_id):
+    book = get_object_or_404(Book, id=book_id)
+
+    if book.is_paid:
+        has_purchased = Order.objects.filter(user=request.user, book=book, status='paid').exists()
+        if not has_purchased:
+            messages.error(request, 'Please purchase this book before leaving a review.')
+            return redirect('book_detail', book_id=book.id)
+
+    if request.method == 'POST':
+        rating = request.POST.get('rating')
+        comment = request.POST.get('comment')
+        Review.objects.update_or_create(
+            book=book, user=request.user,
+            defaults={'rating': rating, 'comment': comment}
+        )
+        messages.success(request, 'Review posted!')
+    return redirect('book_detail', book_id=book.id)
+
+
+@login_required
+def buy_book(request, book_id):
+    """For now this only renders the checkout page, it doesn't create an order."""
+    book = get_object_or_404(Book, id=book_id, is_paid=True)
+
+    session_key = f'coupon_book_{book_id}'
+    coupon_data = request.session.get(session_key)
+
+    base_amount = book.final_price
+    discount_amount = Decimal('0')
+    final_amount = base_amount
+    applied_code = None
+
+    if coupon_data:
+        try:
+            coupon = Coupon.objects.get(id=coupon_data['coupon_id'])
+            valid, _ = coupon.is_valid(purchase_amount=base_amount)
+            if valid:
+                discount_amount = Decimal(coupon_data['discount_amount'])
+                final_amount = Decimal(coupon_data['final_amount'])
+                applied_code = coupon.code
+            else:
+                del request.session[session_key]
+        except Coupon.DoesNotExist:
+            del request.session[session_key]
+
+    context = {
+        'book': book,
+        'base_amount': base_amount,
+        'discount_amount': discount_amount,
+        'final_amount': final_amount,
+        'applied_code': applied_code,
+        'razorpay_key_id': settings.RAZORPAY_KEY_ID,
+    }
+    return render(request, 'payment_checkout.html', context)
+
+
+@csrf_exempt
+@login_required
+def payment_success(request):
+    if request.method == 'POST':
+        payment_id = request.POST.get('razorpay_payment_id')
+        order_id = request.POST.get('razorpay_order_id')
+        signature = request.POST.get('razorpay_signature')
+
+        order = get_object_or_404(Order, razorpay_order_id=order_id)
+
+        params_dict = {
+            'razorpay_order_id': order_id,
+            'razorpay_payment_id': payment_id,
+            'razorpay_signature': signature
+        }
+
+        try:
+            razorpay_client.utility.verify_payment_signature(params_dict)
+            order.razorpay_payment_id = payment_id
+            order.razorpay_signature = signature
+            order.status = 'paid'
+            order.save()
+            messages.success(request, 'Payment successful! Book unlocked.')
+        except razorpay.errors.SignatureVerificationError:
+            order.status = 'failed'
+            order.save()
+            messages.error(request, 'Payment verification failed.')
+
+        return redirect('book_detail', book_id=order.book.id)
+
+
+@login_required
+@require_POST
+def apply_coupon(request, book_id):
+    """AJAX - validates the coupon code and stores it in the session."""
+    book = get_object_or_404(Book, id=book_id, is_paid=True)
+    code = request.POST.get('code', '').strip().upper()
+
+    if not code:
+        return JsonResponse({'success': False, 'message': 'Please enter a coupon code'})
+
+    try:
+        coupon = Coupon.objects.get(code__iexact=code)
+    except Coupon.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'Invalid coupon code'})
+
+    base_amount = book.final_price
+
+    valid, msg = coupon.is_valid(purchase_amount=base_amount)
+    if not valid:
+        return JsonResponse({'success': False, 'message': msg})
+
+    already_used = CouponUsage.objects.filter(coupon=coupon, user=request.user).exists()
+    if already_used:
+        return JsonResponse({'success': False, 'message': 'You have already used this coupon'})
+
+    discount_amount = coupon.calculate_discount(base_amount)
+    final_amount = base_amount - discount_amount
+
+    request.session[f'coupon_book_{book_id}'] = {
+        'coupon_id': coupon.id,
+        'code': coupon.code,
+        'discount_amount': str(discount_amount),
+        'final_amount': str(final_amount),
+    }
+
+    return JsonResponse({
+        'success': True,
+        'message': f'Coupon applied! You got ₹{discount_amount} discount',
+        'code': coupon.code,
+        'base_amount': float(base_amount),
+        'discount_amount': float(discount_amount),
+        'final_amount': float(final_amount),
+    })
+
+
+@login_required
+@require_POST
+def remove_coupon(request, book_id):
+    """For removing a coupon."""
+    request.session.pop(f'coupon_book_{book_id}', None)
+    book = get_object_or_404(Book, id=book_id, is_paid=True)
+    return JsonResponse({
+        'success': True,
+        'base_amount': float(book.final_price),
+    })
+
+
+@login_required
+@require_POST
+def create_payment_order(request, book_id):
+    """After the Pay button is clicked - creates the actual order + razorpay order."""
+    book = get_object_or_404(Book, id=book_id, is_paid=True)
+    base_amount = book.final_price
+
+    session_key = f'coupon_book_{book_id}'
+    coupon_data = request.session.get(session_key)
+
+    coupon = None
+    discount_amount = Decimal('0')
+    final_amount = base_amount
+
+    if coupon_data:
+        try:
+            coupon = Coupon.objects.get(id=coupon_data['coupon_id'])
+            valid, _ = coupon.is_valid(purchase_amount=base_amount)
+            if valid:
+                discount_amount = Decimal(coupon_data['discount_amount'])
+                final_amount = Decimal(coupon_data['final_amount'])
+            else:
+                coupon = None
+        except Coupon.DoesNotExist:
+            coupon = None
+
+    amount_paise = int(final_amount * 100)
+
+    razorpay_order = razorpay_client.order.create({
+        'amount': amount_paise,
+        'currency': 'INR',
+        'payment_capture': 1
+    })
+
+    order = Order.objects.create(
+        user=request.user,
+        book=book,
+        amount=final_amount,
+        coupon=coupon,
+        discount_amount=discount_amount,
+        razorpay_order_id=razorpay_order['id'],
+        status='created'
+    )
+
+    return JsonResponse({
+        'razorpay_order_id': razorpay_order['id'],
+        'amount_paise': amount_paise,
+        'razorpay_key_id': settings.RAZORPAY_KEY_ID,
+        'db_order_id': order.id,
+    })
+
+
+@login_required
+def serve_book_pdf(request, book_id):
+    book = get_object_or_404(Book, id=book_id)
+
+    if book.price != 0:
+        raise Http404("This book is not free.")
+
+    if not book.pdf_file:
+        raise Http404("PDF not available for this book.")
+
+    return FileResponse(
+        book.pdf_file.open('rb'),
+        content_type='application/pdf',
+        as_attachment=False,   # opens inline, won't be downloaded
+        filename=book.pdf_file.name
+    )
+
+
+@csrf_protect
+@require_POST
+def ajax_login(request):
+    email = request.POST.get('email', '').strip().lower()
+    password = request.POST.get('password', '')
+
+    if not email or not password:
+        return JsonResponse({'success': False, 'error': 'Email and password required'}, status=400)
+
+    matched = User.objects.filter(email__iexact=email).first()
+    user = authenticate(request, username=matched.username, password=password) if matched else None
+
+    if user is not None:
+        login(request, user)
+        redirect_url = reverse('management') if _is_management_user(user) else reverse('home')
+        return JsonResponse({'success': True, 'redirect_url': redirect_url})
+    else:
+        return JsonResponse({'success': False, 'error': 'Invalid email or password'}, status=401)
+    
+
+
+
+def category_home(request):
+    category_qs = Category.objects.all().order_by('name')
+    categories = []
+    for cat in category_qs:
+        icon, css_class = CATEGORY_STYLES.get(cat.name.strip().lower(), DEFAULT_CATEGORY_STYLE)
+        categories.append({
+            'name': cat.name,
+            'icon': icon,
+            'css_class': css_class,
+            'image_url': cat.image.url if cat.image else None,
+        })
+    return render(request, 'category/category_home.html', {'categories': categories})
+
+def category_detail(request, slug):
+    category = get_object_or_404(Category, slug=slug)
+    books = Book.objects.filter(category=category)
+    return render(request, 'book/category_detail.html', {'category': category, 'books': books})
+
+@login_required
+def my_library_view(request):
+    """My Library page: purchased books (permanent) + free books the user has added."""
+    purchased_orders = (
+        Order.objects.filter(user=request.user, status='paid')
+        .select_related('book', 'book__category')
+        .order_by('-created_at')
+    )
+    purchased_books = [order.book for order in purchased_orders]
+
+    library_entries = (
+        MyLibrary.objects.filter(user=request.user)
+        .select_related('book', 'book__category')
+    )
+    free_books = [entry.book for entry in library_entries]
+
+    purchased_cards = []
+    for i, book in enumerate(purchased_books):
+        purchased_cards.append({'obj': book, 'cover_class': COVER_CLASSES[i % len(COVER_CLASSES)]})
+
+    free_cards = []
+    for i, book in enumerate(free_books):
+        free_cards.append({'obj': book, 'cover_class': COVER_CLASSES[i % len(COVER_CLASSES)]})
+
+    return render(request, 'my_library.html', {
+        'purchased_cards': purchased_cards,
+        'free_cards': free_cards,
+        'purchased_count': len(purchased_cards),
+        'free_count': len(free_cards),
+    })
+
+
+@login_required
+@require_POST
+def toggle_library(request, book_id):
+    """Adds/removes a free book to/from My Library (AJAX).
+    Paid books should not use this endpoint - they are permanent."""
+    book = get_object_or_404(Book, id=book_id)
+
+    if book.is_paid:
+        return JsonResponse({
+            'success': False,
+            'message': 'Paid books stay permanently in My Library and cannot be removed.'
+        }, status=400)
+
+    entry = MyLibrary.objects.filter(user=request.user, book=book).first()
+    if entry:
+        entry.delete()
+        added = False
+        message = 'Removed from My Library.'
+    else:
+        MyLibrary.objects.create(user=request.user, book=book)
+        added = True
+        message = 'Added to My Library!'
+
+    return JsonResponse({'success': True, 'added': added, 'message': message})
+
+
+# Add this to your existing views.py
+
+def contact(request):
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        email = request.POST.get('email', '').strip()
+        subject = request.POST.get('subject', '').strip()
+        message = request.POST.get('message', '').strip()
+
+        if name and email and message:
+            ContactMessage.objects.create(
+                name=name,
+                email=email,
+                subject=subject,
+                message=message,
+            )
+            messages.success(request, "Your message has been sent! We'll get back to you soon.")
+            return redirect('contact')
+        else:
+            messages.error(request, "Please fill in all required fields.")
+
+    return render(request, 'company/contact.html')
+
+
+def privacy_policy(request):
+    return render(request, 'company/privacy_policy.html')
+
+
+def terms_of_service(request):
+    return render(request, 'company/terms_of_service.html')
+
+
+def faq(request):
+    return render(request, 'company/faq.html')
+
+
+
+# ============================================================
+# ADD TO views.py — Admin CRUD (import AboutPage at top: from .models import AboutPage)
+# ============================================================
+
+from django.contrib.auth.models import Group
+
+
+def _team_role(user):
+    """Best-effort role label for the Access Management table."""
+    if user.is_superuser or user.is_staff:
+        return 'Admin'
+    if user.groups.filter(name='Editor').exists():
+        return 'Editor'
+    if user.groups.filter(name='Viewer').exists():
+        return 'Viewer'
+    if user.groups.filter(name='Author').exists():
+        return 'Author'
+    return 'User'
+
+
+# ---------- management_view: admin branch context (replace the admin half) ----------
+@login_required(login_url='home')
+@user_passes_test(_is_management_user, login_url='home')
+def management_view(request):
+    role = _get_user_role(request.user)
+
+    if role == 'author':
+        my_books = Book.objects.filter(created_by=request.user).select_related('category').order_by('-created_at')
+        my_reviews = Review.objects.filter(book__created_by=request.user).select_related('user', 'book').order_by('-created_at')
+        return render(request, 'author_management.html', {
+            'role': role,
+            'user_name': request.user.first_name or request.user.username,
+            'user_email': request.user.email,
+            'my_books': my_books,
+            'my_reviews': my_reviews,
+            'categories': Category.objects.all().order_by('name'),
+            'book_count': my_books.count(),
+            'review_count': my_reviews.count(),
+        })
+
+    # ---- Admin branch ----
+    books = Book.objects.select_related('category').order_by('-created_at')
+    categories = Category.objects.annotate(book_total=Count('books')).order_by('name')
+    authors = Author.objects.order_by('name')
+    about = AboutPage.load()
+
+    team_qs = User.objects.filter(
+        Q(is_staff=True) | Q(groups__name__in=['Editor', 'Viewer'])
+    ).distinct().order_by('first_name', 'username')
+    team = [{
+        'id': u.id,
+        'name': u.first_name or u.username,
+        'email': u.email,
+        'role': _team_role(u),
+        'status': 'Active' if u.is_active else 'Suspended',
+    } for u in team_qs]
+
+    return render(request, 'account/management.html', {
+        'role': role,
+        'user_name': request.user.first_name or request.user.username,
+        'user_email': request.user.email,
+        'books': books,
+        'categories': categories,
+        'authors': authors,
+        'about': about,
+        'team': team,
+        'book_count': books.count(),
+        'category_count': categories.count(),
+        'author_count': authors.count(),
+        'team_count': len(team),
+    })
+
+
+# ---------- Admin: Book CRUD ----------
+@login_required(login_url='home')
+@user_passes_test(_is_staff_user, login_url='home')
+@require_POST
+def admin_add_book(request):
+    title = request.POST.get('title', '').strip()
+    category_id = request.POST.get('category')
+    author = request.POST.get('author', '').strip()
+    isbn = request.POST.get('isbn', '').strip()
+    is_paid = request.POST.get('pricing_type') == 'Paid'
+    price = request.POST.get('price') or 0
+    discount = request.POST.get('discount') or 0
+
+    if not title or not category_id:
+        messages.error(request, 'Title and category are required.')
+        return redirect('management')
+
+    category = get_object_or_404(Category, id=category_id)
+
+    # NOTE: adjust field names below (author/isbn/discount) to match your
+    # actual Book model — these mirror the fields the old admin UI collected.
+    Book.objects.create(
+        title=title,
+        category=category,
+        author=author,
+        isbn=isbn,
+        is_paid=is_paid,
+        price=price if is_paid else 0,
+        discount=discount if is_paid else 0,
+        cover_image=request.FILES.get('cover_image'),
+        pdf_file=request.FILES.get('pdf_file'),
+        created_by=request.user,
+    )
+    messages.success(request, f'"{title}" added to the catalogue.')
+    return redirect('management')
+
+
+@login_required(login_url='home')
+@user_passes_test(_is_staff_user, login_url='home')
+@require_POST
+def admin_edit_book(request, book_id):
+    book = get_object_or_404(Book, id=book_id)
+
+    book.title = request.POST.get('title', book.title).strip()
+    category_id = request.POST.get('category')
+    if category_id:
+        book.category = get_object_or_404(Category, id=category_id)
+    book.author = request.POST.get('author', getattr(book, 'author', '')).strip()
+    book.isbn = request.POST.get('isbn', book.isbn).strip()
+
+    is_paid = request.POST.get('pricing_type') == 'Paid'
+    book.is_paid = is_paid
+    book.price = request.POST.get('price') or 0 if is_paid else 0
+    book.discount = request.POST.get('discount') or 0 if is_paid else 0
+
+    if request.FILES.get('cover_image'):
+        book.cover_image = request.FILES.get('cover_image')
+    if request.FILES.get('pdf_file'):
+        book.pdf_file = request.FILES.get('pdf_file')
+
+    book.save()
+    messages.success(request, f'"{book.title}" updated.')
+    return redirect('management')
+
+
+@login_required(login_url='home')
+@user_passes_test(_is_staff_user, login_url='home')
+@require_POST
+def admin_delete_book(request, book_id):
+    book = get_object_or_404(Book, id=book_id)
+    title = book.title
+    book.delete()
+    messages.success(request, f'"{title}" removed.')
+    return redirect('management')
+
+
+# ---------- Admin: Category CRUD ----------
+@login_required(login_url='home')
+@user_passes_test(_is_staff_user, login_url='home')
+@require_POST
+def admin_add_category(request):
+    name = request.POST.get('name', '').strip()
+    if not name:
+        messages.error(request, 'Category name is required.')
+        return redirect('management')
+    Category.objects.create(
+        name=name,
+        description=request.POST.get('description', '').strip(),
+        image=request.FILES.get('image'),
+    )
+    messages.success(request, f'Category "{name}" added.')
+    return redirect('management')
+
+
+@login_required(login_url='home')
+@user_passes_test(_is_staff_user, login_url='home')
+@require_POST
+def admin_edit_category(request, category_id):
+    category = get_object_or_404(Category, id=category_id)
+    category.name = request.POST.get('name', category.name).strip()
+    category.description = request.POST.get('description', getattr(category, 'description', '')).strip()
+    if request.FILES.get('image'):
+        category.image = request.FILES.get('image')
+    category.save()
+    messages.success(request, f'Category "{category.name}" updated.')
+    return redirect('management')
+
+
+@login_required(login_url='home')
+@user_passes_test(_is_staff_user, login_url='home')
+@require_POST
+def admin_delete_category(request, category_id):
+    category = get_object_or_404(Category, id=category_id)
+    name = category.name
+    category.delete()
+    messages.success(request, f'Category "{name}" removed.')
+    return redirect('management')
+
+
+# ---------- Admin: Author CRUD (the Author *entity* model, not a user) ----------
+@login_required(login_url='home')
+@user_passes_test(_is_staff_user, login_url='home')
+@require_POST
+def admin_add_author(request):
+    name = request.POST.get('name', '').strip()
+    if not name:
+        messages.error(request, 'Author name is required.')
+        return redirect('management')
+    Author.objects.create(
+        name=name,
+        nationality=request.POST.get('nationality', '').strip(),
+        bio=request.POST.get('bio', '').strip(),
+        image=request.FILES.get('image'),
+    )
+    messages.success(request, f'Author "{name}" added.')
+    return redirect('management')
+
+
+@login_required(login_url='home')
+@user_passes_test(_is_staff_user, login_url='home')
+@require_POST
+def admin_edit_author(request, author_id):
+    author = get_object_or_404(Author, id=author_id)
+    author.name = request.POST.get('name', author.name).strip()
+    author.nationality = request.POST.get('nationality', getattr(author, 'nationality', '')).strip()
+    author.bio = request.POST.get('bio', getattr(author, 'bio', '')).strip()
+    if request.FILES.get('image'):
+        author.image = request.FILES.get('image')
+    author.save()
+    messages.success(request, f'Author "{author.name}" updated.')
+    return redirect('management')
+
+
+@login_required(login_url='home')
+@user_passes_test(_is_staff_user, login_url='home')
+@require_POST
+def admin_delete_author(request, author_id):
+    author = get_object_or_404(Author, id=author_id)
+    name = author.name
+    author.delete()
+    messages.success(request, f'Author "{name}" removed.')
+    return redirect('management')
+
+
+# ---------- Admin: Access Management (real Users + Groups) ----------
+@login_required(login_url='home')
+@user_passes_test(_is_staff_user, login_url='home')
+@require_POST
+def admin_grant_access(request):
+    name = request.POST.get('name', '').strip()
+    email = request.POST.get('email', '').strip().lower()
+    role = request.POST.get('role', 'Editor')
+    password = request.POST.get('password', '')
+
+    if not name or not email or not password:
+        messages.error(request, 'Please fill all required fields.')
+        return redirect('management')
+
+    if User.objects.filter(email__iexact=email).exists():
+        messages.error(request, 'That email already has access.')
+        return redirect('management')
+
+    base_username = email.split('@')[0]
+    username = base_username
+    suffix = 1
+    while User.objects.filter(username=username).exists():
+        suffix += 1
+        username = f"{base_username}{suffix}"
+
+    user = User.objects.create_user(username=username, email=email, password=password)
+    user.first_name = name
+    user.is_staff = (role == 'Admin')   # Admin role = full staff access
+    user.save()
+
+    if role in ('Editor', 'Viewer'):
+        group, _ = Group.objects.get_or_create(name=role)
+        user.groups.add(group)
+
+    messages.success(request, f'Access granted to {name}.')
+    return redirect('management')
+
+
+@login_required(login_url='home')
+@user_passes_test(_is_staff_user, login_url='home')
+@require_POST
+def admin_toggle_access(request, user_id):
+    target = get_object_or_404(User, id=user_id)
+    if target == request.user:
+        messages.error(request, "You can't suspend your own account.")
+        return redirect('management')
+    target.is_active = not target.is_active
+    target.save()
+    messages.success(request, f"Access {'activated' if target.is_active else 'suspended'} for {target.first_name or target.username}.")
+    return redirect('management')
+
+
+@login_required(login_url='home')
+@user_passes_test(_is_staff_user, login_url='home')
+@require_POST
+def admin_remove_access(request, user_id):
+    target = get_object_or_404(User, id=user_id)
+    if target == request.user:
+        messages.error(request, "You can't remove your own account.")
+        return redirect('management')
+    name = target.first_name or target.username
+    target.delete()
+    messages.success(request, f'{name} removed from the team.')
+    return redirect('management')
+
+
+# ---------- Admin: About Us page ----------
+@login_required(login_url='home')
+@user_passes_test(_is_staff_user, login_url='home')
+@require_POST
+def admin_save_about(request):
+    about = AboutPage.load()
+    about.heading = request.POST.get('heading', about.heading).strip()
+    about.body = request.POST.get('body', about.body).strip()
+    about.save()
+    messages.success(request, 'About Us page updated.')
+    return redirect('management')

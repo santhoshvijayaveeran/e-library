@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Library - Sanza Library{% endblock %}
+
+{% block content %}
+<div class="my-library-page" style="max-width: 1300px; margin: 0 auto; padding: 40px 20px;">
+
+    <h1 style="margin-bottom: 8px;">My Library</h1>
+    <p style="color: #666; margin-bottom: 32px;">
+        All your purchased & free books, organized by category. ({{ total_books }} books total)
+    </p>
+
+    {% if category_cards %}
+    <div class="category-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:24px;">
+        {% for cat in category_cards %}
+        <a href="{% url 'my_library_category' cat.id %}" style="text-decoration:none; color:inherit;">
+            <div class="category-card" style="background:#f7f7f8; border-radius:12px; padding:16px; transition:0.2s;">
+
+                <!-- Cover mosaic (2x2 like Spotify playlist art) -->
+                <div style="display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:2px; border-radius:8px; overflow:hidden; aspect-ratio:1/1; background:#ddd;">
+                               {% if cat.category_image %}
+        <img src="{{ cat.category_image }}"
+             style="grid-column:span 2; grid-row:span 2; width:100%; height:100%; object-fit:cover;">
+
+    {% elif cat.cover_mosaic %}
+        {% for cover in cat.cover_mosaic %}
+            <img src="{{ cover }}"
+                 style="width:100%; height:100%; object-fit:cover;">
+        {% endfor %}
+
+    {% else %}
+        <div style="grid-column:span 2; grid-row:span 2; display:flex; align-items:center; justify-content:center; color:#999;">
+            <i class="fa-solid fa-book" style="font-size:32px;"></i>
+        </div>
+    {% endif %}
+
+</div>
+ 
+
+                <p style="margin:12px 0 2px; font-weight:700; font-size:16px;">{{ cat.name }}</p>
+                <p style="margin:0; font-size:13px; color:#888;">{{ cat.book_count }} book{{ cat.book_count|pluralize }}</p>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p style="color:#999;">
+        Unga library empty-a irukku. <a href="{% url 'paid_books' %}">Books add pannunga →</a>
+    </p>
+    {% endif %}
+</div>
+
+
+<script>
+document.addEventListener('click', function (e) {
+    const btn = e.target.closest('.remove-from-library-btn');
+    if (!btn) return;
+
+    const bookId = btn.dataset.bookId;
+    const csrftoken = document.cookie.split('; ').find(row => row.startsWith('csrftoken='))?.split('=')[1];
+
+    fetch(`/my-library/toggle/${bookId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrftoken,
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success && !data.added) {
+            const card = document.getElementById(`book-card-${bookId}`);
+            if (card) card.remove();
+        }
+    })
+    .catch(err => console.error('Remove failed:', err));
+});
+</script>
+{% endblock %}

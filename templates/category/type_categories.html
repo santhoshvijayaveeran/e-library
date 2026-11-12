@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ page_title }} - Sanza Library{% endblock %}
+{% block content %}
+<section class="section" style="padding-top:32px;">
+    <div class="section-head">
+        <div>
+            <h2><i class="fa-solid {% if book_type == 'free' %}fa-gift{% else %}fa-crown{% endif %}"></i> {{ page_title }} - Browse Categories</h2>
+        </div>
+        <a href="{% url 'home' %}" style="color:#6c5ce7; text-decoration:none; font-weight:600;">
+            <i class="fa-solid fa-chevron-left"></i> Back to Home
+        </a>
+    </div>
+
+    <div class="category-grid">
+        {% for cat in categories %}
+        {% if cat.image_url %}
+        <div class="category-card image-cat" onclick="window.location.href='{% url 'category_books' cat.name %}?type={{ book_type }}'" style="background-image:url('{{ cat.image_url }}');">
+            <div class="cat-overlay"><p>{{ cat.name }}</p></div>
+        </div>
+        {% else %}
+        <div class="category-card" onclick="window.location.href='{% url 'category_books' cat.name %}?type={{ book_type }}'">
+            <div class="cat-icon {{ cat.css_class }}"><i class="{{ cat.icon }}"></i></div>
+            <p>{{ cat.name }}</p>
+        </div>
+        {% endif %}
+        {% empty %}
+        <p class="empty-state">No categories available for this type yet.</p>
+        {% endfor %}
+    </div>
+
+    <div style="margin-top:26px;">
+        <a href="{% if book_type == 'free' %}{% url 'free_books' %}{% else %}{% url 'paid_books' %}{% endif %}" style="color:#2563eb; font-weight:600; text-decoration:none;">
+            View all {{ page_title }} <i class="fa-solid fa-chevron-right"></i>
+        </a>
+    </div>
+</section>
+{% endblock %}

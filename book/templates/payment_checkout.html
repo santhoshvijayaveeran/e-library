@@ -1,0 +1,332 @@
+{% extends "base.html" %}
+
+{% block title %}Checkout - {{ book.title }}{% endblock %}
+
+{% block extra_head %}
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+{% endblock %}
+
+{% block extra_css %}
+.checkout-wrap{
+  min-height:calc(100vh - 80px);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:40px 20px;
+}
+.checkout-card{
+  background:#fff;
+  width:90%;
+  max-width:420px;
+  border-radius:14px;
+  box-shadow:0 8px 25px rgba(0,0,0,.08);
+  padding:36px;
+  text-align:center;
+}
+.checkout-card .cover{
+  width:140px;
+  height:190px;
+  margin:0 auto 20px;
+  border-radius:8px;
+  background:#12172a;
+  background-size:cover;
+  background-position:center;
+  box-shadow:0 8px 20px rgba(0,0,0,.15);
+}
+.checkout-card h1{
+  font-family:'Playfair Display',serif;
+  font-size:22px;
+  color:#111;
+  margin-bottom:4px;
+}
+.checkout-card p.sub{
+  color:#888;
+  font-size:14px;
+  margin-bottom:22px;
+}
+.amount-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  background:#f9fafb;
+  border-radius:10px;
+  padding:14px 18px;
+  margin-bottom:16px;
+  font-size:14px;
+  color:#444;
+}
+.amount-row .amt{
+  font-size:20px;
+  font-weight:700;
+  color:#111;
+}
+.amount-row .amt .strike{
+  text-decoration:line-through;
+  opacity:.55;
+  font-weight:400;
+  font-size:14px;
+  margin-right:6px;
+}
+.coupon-box{
+  margin-bottom:16px;
+  text-align:left;
+}
+.coupon-input-row{
+  display:flex;
+  gap:8px;
+}
+.coupon-input-row input{
+  flex:1;
+  padding:12px 14px;
+  border:1px solid #e5e7eb;
+  border-radius:8px;
+  font-size:14px;
+  text-transform:uppercase;
+}
+.coupon-input-row button{
+  padding:12px 18px;
+  background:#2563eb;
+  color:#fff;
+  border:none;
+  border-radius:8px;
+  font-weight:600;
+  font-size:13px;
+  cursor:pointer;
+  white-space:nowrap;
+}
+.coupon-input-row button:hover{ background:#1d4ed8; }
+.coupon-msg{
+  margin-top:8px;
+  font-size:13px;
+}
+.coupon-msg.success{ color:#1f7a3f; }
+.coupon-msg.error{ color:#dc2626; }
+.applied-coupon{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  background:#fdf6e6;
+  border-radius:8px;
+  padding:10px 14px;
+  font-size:13px;
+  color:#8a6d1a;
+  margin-top:8px;
+}
+.applied-coupon b{ color:#c9a84c; }
+.applied-coupon .remove-btn{
+  color:#dc2626;
+  cursor:pointer;
+  font-size:12px;
+  text-decoration:underline;
+  background:none;
+  border:none;
+}
+#payBtn{
+  width:100%;
+  padding:14px;
+  background:#111;
+  color:#fff;
+  border:none;
+  border-radius:8px;
+  font-size:15px;
+  font-weight:600;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  transition:.2s;
+}
+#payBtn:hover{ background:#000; }
+#payBtn:disabled{ opacity:.6; cursor:not-allowed; }
+.secure-note{
+  margin-top:16px;
+  font-size:12px;
+  color:#999;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+}
+.checkout-back-link{
+  display:inline-block;
+  margin-top:20px;
+  color:#2563eb;
+  text-decoration:none;
+  font-size:13px;
+}
+.checkout-back-link:hover{ text-decoration:underline; }
+{% endblock %}
+
+{% block content %}
+<div class="checkout-wrap">
+  <div class="checkout-card">
+    <div class="cover" {% if book.cover_image %}style="background-image:url('{{ book.cover_image.url }}');"{% endif %}></div>
+    <h1>{{ book.title }}</h1>
+    <p class="sub">by {{ book.author }}</p>
+
+    <div class="amount-row" id="amountRow">
+      <span>Amount to pay</span>
+      <span class="amt" id="amtDisplay">
+        {% if discount_amount > 0 %}
+          <span class="strike">₹{{ base_amount }}</span>₹{{ final_amount }}
+        {% else %}
+          ₹{{ base_amount }}
+        {% endif %}
+      </span>
+    </div>
+
+    <div class="coupon-box">
+      <div id="couponFormArea" {% if applied_code %}style="display:none;"{% endif %}>
+        <div class="coupon-input-row">
+          <input type="text" id="couponCode" placeholder="Enter coupon code">
+          <button type="button" id="applyCouponBtn">Apply</button>
+        </div>
+      </div>
+
+      <div id="appliedCouponArea" {% if not applied_code %}style="display:none;"{% endif %}>
+        <div class="applied-coupon">
+          <span><i class="fa-solid fa-tag"></i> <b id="appliedCode">{{ applied_code }}</b> applied</span>
+          <button type="button" class="remove-btn" id="removeCouponBtn">Remove</button>
+        </div>
+      </div>
+
+      <p class="coupon-msg" id="couponMsg"></p>
+    </div>
+
+    <button id="payBtn"><i class="fa-solid fa-lock"></i> Pay Now</button>
+
+    <p class="secure-note"><i class="fa-solid fa-shield-halved"></i> Secured by Razorpay</p>
+
+    <a href="{% url 'book_detail' book.id %}" class="checkout-back-link"><i class="fa-solid fa-arrow-left"></i> Cancel and go back</a>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const bookId = {{ book.id }};
+const baseAmount = {{ base_amount }};
+const csrfToken = '{{ csrf_token }}';
+
+function updateAmountDisplay(base, discount, final){
+    const amtEl = document.getElementById('amtDisplay');
+    if(discount > 0){
+        amtEl.innerHTML = `<span class="strike">₹${base}</span>₹${final}`;
+    } else {
+        amtEl.innerHTML = `₹${base}`;
+    }
+}
+
+document.getElementById('applyCouponBtn').addEventListener('click', function(){
+    const code = document.getElementById('couponCode').value.trim();
+    const msgEl = document.getElementById('couponMsg');
+
+    if(!code){
+        msgEl.textContent = 'Please enter a coupon code';
+        msgEl.className = 'coupon-msg error';
+        return;
+    }
+
+    fetch(`/coupon/apply/${bookId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrfToken,
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: `code=${encodeURIComponent(code)}`
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.success){
+            msgEl.textContent = data.message;
+            msgEl.className = 'coupon-msg success';
+            updateAmountDisplay(data.base_amount, data.discount_amount, data.final_amount);
+            document.getElementById('couponFormArea').style.display = 'none';
+            document.getElementById('appliedCouponArea').style.display = 'block';
+            document.getElementById('appliedCode').textContent = data.code;
+        } else {
+            msgEl.textContent = data.message;
+            msgEl.className = 'coupon-msg error';
+        }
+    })
+    .catch(() => {
+        msgEl.textContent = 'Something went wrong, please try again';
+        msgEl.className = 'coupon-msg error';
+    });
+});
+
+document.getElementById('removeCouponBtn').addEventListener('click', function(){
+    fetch(`/coupon/remove/${bookId}/`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrfToken }
+    })
+    .then(res => res.json())
+    .then(data => {
+        updateAmountDisplay(data.base_amount, 0, data.base_amount);
+        document.getElementById('couponFormArea').style.display = 'block';
+        document.getElementById('appliedCouponArea').style.display = 'none';
+        document.getElementById('couponCode').value = '';
+        document.getElementById('couponMsg').textContent = '';
+    });
+});
+
+document.getElementById('payBtn').onclick = function(e){
+    const payBtn = this;
+    payBtn.disabled = true;
+    payBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Please wait...';
+
+    fetch(`/order/create/${bookId}/`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrfToken }
+    })
+    .then(res => res.json())
+    .then(data => {
+        var options = {
+            "key": data.razorpay_key_id,
+            "amount": data.amount_paise,
+            "currency": "INR",
+            "name": "Sanza Library",
+            "description": "Purchase: {{ book.title }}",
+            "order_id": data.razorpay_order_id,
+            "handler": function (response){
+                var form = document.createElement('form');
+                form.method = 'POST';
+                form.action = "{% url 'payment_success' %}";
+
+                const csrf = document.createElement('input');
+                csrf.type = 'hidden'; csrf.name = 'csrfmiddlewaretoken'; csrf.value = csrfToken;
+                form.appendChild(csrf);
+
+                const fields = {
+                    'razorpay_payment_id': response.razorpay_payment_id,
+                    'razorpay_order_id': response.razorpay_order_id,
+                    'razorpay_signature': response.razorpay_signature
+                };
+                for(const key in fields){
+                    const input = document.createElement('input');
+                    input.type = 'hidden'; input.name = key; input.value = fields[key];
+                    form.appendChild(input);
+                }
+                document.body.appendChild(form);
+                form.submit();
+            },
+            "modal": {
+                "ondismiss": function(){
+                    payBtn.disabled = false;
+                    payBtn.innerHTML = '<i class="fa-solid fa-lock"></i> Pay Now';
+                }
+            },
+            "theme": { "color": "#111827" }
+        };
+        var rzp = new Razorpay(options);
+        rzp.open();
+    })
+    .catch(() => {
+        payBtn.disabled = false;
+        payBtn.innerHTML = '<i class="fa-solid fa-lock"></i> Pay Now';
+        alert('Could not create the order, please try again');
+    });
+};
+</script>
+{% endblock %}

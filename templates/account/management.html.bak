@@ -1,0 +1,475 @@
+
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Admin Panel — Sanza Library{% endblock %}
+
+{% block extra_css %}
+<style>
+  :root{
+    --acc:#2563eb;
+    --acc-soft:#eef3ff;
+    --ink:#222;
+    --muted:#777;
+    --line:#e6e6e6;
+    --card:#ffffff;
+    --bg:#f5f5f5;
+    --danger:#c02c47;
+    --ok:#1f7a3f;
+    --radius:12px;
+    --shadow:0 3px 15px rgba(0,0,0,.06);
+  }
+  .mgmt-shell{ display:flex; max-width:1280px; margin:0 auto; background:var(--bg); }
+  .mgmt-sidebar{ width:220px; flex-shrink:0; padding:28px 14px; position:sticky; top:0; align-self:flex-start; }
+  .mgmt-side-link{ display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:8px; font-size:0.92rem; font-weight:500; color:#444; cursor:pointer; margin-bottom:4px; border-left:3px solid transparent; }
+  .mgmt-side-link i{ width:16px; text-align:center; color:var(--acc); }
+  .mgmt-side-link:hover{ background:var(--acc-soft); }
+  .mgmt-side-link.active{ background:#fff; box-shadow:var(--shadow); color:var(--acc); border-left:3px solid var(--acc); font-weight:600; }
+  .mgmt-main{ flex:1; padding:32px 32px 60px; min-width:0; }
+  .mgmt-head{ margin-bottom:22px; }
+  .mgmt-head .eyebrow{ font-size:0.72rem; letter-spacing:1.5px; text-transform:uppercase; color:var(--acc); font-weight:700; }
+  .mgmt-head h1{ font-family:'Playfair Display',serif; font-size:1.9rem; margin:6px 0 0; color:#111; }
+  .mgmt-head p{ margin:6px 0 0; color:var(--muted); font-size:0.92rem; max-width:520px; }
+  .mgmt-panel{ display:none; }
+  .mgmt-panel.active{ display:block; }
+  .mgmt-grid{ display:grid; grid-template-columns:1fr 1fr; gap:22px; align-items:start; }
+  @media (max-width:900px){ .mgmt-grid{ grid-template-columns:1fr; } .mgmt-shell{ flex-direction:column; } .mgmt-sidebar{ position:relative; width:100%; display:flex; flex-wrap:wrap; } }
+  .mgmt-card{ background:var(--card); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); padding:24px; }
+  .mgmt-card h3{ font-family:'Playfair Display',serif; font-size:1.1rem; margin:0 0 4px; color:#111; }
+  .mgmt-card label{ display:block; font-size:0.8rem; font-weight:600; color:#333; margin:14px 0 6px; }
+  .mgmt-card label:first-of-type{ margin-top:0; }
+  .mgmt-card input[type=text], .mgmt-card input[type=number], .mgmt-card input[type=email], .mgmt-card input[type=password], .mgmt-card select, .mgmt-card textarea{
+    width:100%; padding:10px 12px; border:1px solid #000; border-radius:8px; background:#fafafa; font-size:0.9rem; color:var(--ink); outline:none;
+  }
+  .mgmt-card input[type=file]{ width:100%; padding:8px 10px; border:1px dashed var(--line); border-radius:8px; background:#fafafa; font-size:0.85rem; color:var(--muted); cursor:pointer; }
+  .mgmt-card textarea{ resize:vertical; min-height:80px; }
+  .mgmt-card input:focus, .mgmt-card select:focus, .mgmt-card textarea:focus{ border-color:var(--acc); box-shadow:0 0 0 3px rgba(37,99,235,.12); }
+  .mgmt-row2{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .mgmt-btn{ display:inline-flex; align-items:center; gap:8px; border:none; padding:11px 20px; border-radius:8px; font-size:0.88rem; font-weight:600; cursor:pointer; }
+  .mgmt-btn-primary{ background:var(--acc); color:#fff; border:1.5px solid #000; }
+  .mgmt-btn-primary:hover{ background:#1d4ed8; border-color:#000; }
+  .mgmt-btn-ghost{ background:transparent; border:1px solid var(--line); color:#444; }
+  .mgmt-btn-ghost:hover{ background:var(--acc-soft); }
+  .mgmt-btn-danger-text{ background:none; border:none; color:var(--danger); font-weight:600; font-size:0.8rem; cursor:pointer; padding:4px 8px; }
+  .mgmt-btn-danger-text:hover{ text-decoration:underline; }
+  .mgmt-btn-edit-text{ background:none; border:none; color:var(--acc); font-weight:600; font-size:0.8rem; cursor:pointer; padding:4px 8px; }
+  .mgmt-btn-edit-text:hover{ text-decoration:underline; }
+  .mgmt-form-actions{ margin-top:20px; display:flex; gap:10px; }
+  .mgmt-toggle-group{ display:flex; gap:10px; }
+  .mgmt-toggle-btn{ flex:1; text-align:center; padding:10px 12px; border:1.5px solid #000; border-radius:8px; background:#fafafa; color:var(--muted); font-weight:600; font-size:0.85rem; cursor:pointer; }
+  .mgmt-toggle-btn.active{ background:var(--acc); border-color:#000; color:#fff; }
+  .mgmt-price-fields{ display:none; grid-template-columns:1fr 1fr; gap:14px; margin-top:14px; padding:12px; border:1.5px solid #000; border-radius:8px; }
+  .mgmt-price-fields.show{ display:grid; }
+  .mgmt-table{ width:100%; border-collapse:collapse; }
+  .mgmt-table thead th{ text-align:left; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.6px; color:var(--muted); font-weight:700; padding:0 10px 10px; border-bottom:1px solid var(--line); }
+  .mgmt-table tbody td{ padding:12px 10px; font-size:0.87rem; border-bottom:1px solid #f0f0f0; vertical-align:middle; }
+  .mgmt-table tbody tr:hover{ background:#fafcff; }
+  .mgmt-tag{ display:inline-block; font-size:0.72rem; font-weight:700; padding:3px 10px; border-radius:999px; }
+  .mgmt-tag-admin{ background:#eef3ff; color:var(--acc); }
+  .mgmt-tag-editor{ background:#e3f7e8; color:var(--ok); }
+  .mgmt-tag-viewer{ background:#eee; color:#556; }
+  .mgmt-tag-free{ background:#e3f7e8; color:var(--ok); }
+  .mgmt-tag-paid{ background:#eef3ff; color:var(--acc); }
+  .mgmt-empty-row td{ text-align:center; color:#aaa; padding:30px 10px; font-style:italic; }
+  .mgmt-row-actions{ display:flex; gap:6px; }
+  .mgmt-thumb{ width:26px;height:36px; object-fit:cover; border-radius:4px; border:1px solid var(--line); background:var(--acc-soft); flex-shrink:0; }
+  .mgmt-thumb-round{ width:36px;height:36px; border-radius:50%; object-fit:cover; border:1px solid var(--line); }
+  .mgmt-title-cell{ display:flex; gap:10px; align-items:flex-start; }
+  .mgmt-stat-strip{ display:flex; gap:16px; margin-bottom:22px; flex-wrap:wrap; }
+  .mgmt-stat{ background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:16px 20px; min-width:140px; box-shadow:var(--shadow); }
+  .mgmt-stat .num{ font-family:'Playfair Display',serif; font-size:1.5rem; color:#111; font-weight:700; }
+  .mgmt-stat .lbl{ font-size:0.75rem; color:var(--muted); margin-top:2px; }
+  .mgmt-edit-banner{ display:none; align-items:center; justify-content:space-between; gap:10px; background:var(--acc-soft); color:#1d4ed8; border:1px solid var(--acc); border-radius:8px; padding:10px 14px; font-size:0.82rem; font-weight:600; margin-bottom:16px; }
+  .mgmt-edit-banner.show{ display:flex; }
+  .mgmt-edit-banner button{ background:none; border:none; color:#1d4ed8; font-weight:700; cursor:pointer; font-size:0.78rem; text-decoration:underline; }
+  .mgmt-flash{ margin-bottom:16px; padding:14px 18px; border-left:3px solid var(--acc); font-size:0.87rem; }
+  .mgmt-char-count{ font-size:0.75rem; color:#aaa; text-align:right; margin-top:4px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mgmt-shell">
+  <div class="mgmt-sidebar">
+    <div class="mgmt-side-link active" data-panel="books-panel"><i class="fa-solid fa-book"></i> Books</div>
+    <div class="mgmt-side-link" data-panel="categories-panel"><i class="fa-solid fa-layer-group"></i> Categories</div>
+    <div class="mgmt-side-link" data-panel="authors-panel"><i class="fa-solid fa-feather"></i> Authors</div>
+    <div class="mgmt-side-link" data-panel="about-panel"><i class="fa-solid fa-pen"></i> About Us</div>
+    <div class="mgmt-side-link" data-panel="access-panel"><i class="fa-solid fa-lock"></i> Access</div>
+    <div class="mgmt-side-link" data-panel="profile-panel"><i class="fa-solid fa-user"></i> Profile</div>
+  </div>
+
+  <div class="mgmt-main">
+    {% if messages %}{% for message in messages %}<div class="mgmt-card mgmt-flash">{{ message }}</div>{% endfor %}{% endif %}
+
+    <div class="mgmt-stat-strip">
+      <div class="mgmt-stat"><div class="num">{{ book_count }}</div><div class="lbl">Books</div></div>
+      <div class="mgmt-stat"><div class="num">{{ category_count }}</div><div class="lbl">Categories</div></div>
+      <div class="mgmt-stat"><div class="num">{{ author_count }}</div><div class="lbl">Authors</div></div>
+      <div class="mgmt-stat"><div class="num">{{ team_count }}</div><div class="lbl">Team Members</div></div>
+    </div>
+
+    <!-- PROFILE -->
+    <section class="mgmt-panel" id="profile-panel">
+      <div class="mgmt-head"><span class="eyebrow">Account</span><h1>My Profile</h1></div>
+      <div class="mgmt-card" style="max-width:480px;">
+        <p><strong>Name:</strong> {{ user_name }}</p>
+        <p><strong>Email:</strong> {{ user_email }}</p>
+        <p><strong>Role:</strong> Admin — full access</p>
+      </div>
+    </section>
+
+    <!-- BOOKS -->
+    <section class="mgmt-panel active" id="books-panel">
+      <div class="mgmt-head"><span class="eyebrow">Catalogue</span><h1>Books</h1><p>Add new titles and keep existing entries up to date.</p></div>
+      <div class="mgmt-grid">
+        <div class="mgmt-card">
+          <h3 id="book-form-heading">Add a book</h3>
+          <div class="mgmt-edit-banner" id="book-edit-banner"><span>Editing an existing book</span><button type="button" id="book-cancel-edit-inline">Cancel edit</button></div>
+          <form id="book-form" method="post" enctype="multipart/form-data" action="{% url 'admin_add_book' %}">
+            {% csrf_token %}
+            <input type="hidden" name="pricing_type" id="pricing-type-hidden" value="Free">
+            <label>Title *</label>
+            <input type="text" name="title" id="book-title" required>
+            <div class="mgmt-row2">
+              <div><label>Author</label><input type="text" name="author" id="book-author" placeholder="e.g. Chimamanda Ngozi Adichie"></div>
+              <div><label>Category *</label>
+                <select name="category" id="book-category" required>
+                  <option value="">Select category</option>
+                  {% for cat in categories %}<option value="{{ cat.id }}">{{ cat.name }}</option>{% endfor %}
+                </select>
+              </div>
+            </div>
+            <label>ISBN</label>
+            <input type="text" name="isbn" id="book-isbn">
+            <div class="mgmt-row2"><label>Cover image</label><label>Book PDF</label></div>
+            <div class="mgmt-row2">
+              <input type="file" name="cover_image" id="book-image" accept="image/*">
+              <input type="file" name="pdf_file" id="book-pdf" accept="application/pdf">
+            </div>
+            <label>Pricing</label>
+            <div class="mgmt-toggle-group">
+              <button type="button" class="mgmt-toggle-btn active" id="btn-free" data-type="Free">Free</button>
+              <button type="button" class="mgmt-toggle-btn" id="btn-paid" data-type="Paid">Paid</button>
+            </div>
+            <div class="mgmt-price-fields" id="price-fields">
+              <div><label>Price (₹)</label><input type="number" name="price" id="book-price" min="0" step="0.01"></div>
+              <div><label>Discount (₹)</label><input type="number" name="discount" id="book-discount" min="0" step="0.01"></div>
+            </div>
+            <div class="mgmt-form-actions">
+              <button type="submit" class="mgmt-btn mgmt-btn-primary" id="book-submit-btn">Add book</button>
+              <button type="reset" class="mgmt-btn mgmt-btn-ghost">Clear</button>
+              <button type="button" class="mgmt-btn mgmt-btn-ghost" id="book-cancel-edit" style="display:none;">Cancel edit</button>
+            </div>
+          </form>
+        </div>
+        <div class="mgmt-card">
+          <h3 style="margin-bottom:16px;">Catalogue ({{ book_count }})</h3>
+          <table class="mgmt-table">
+            <thead><tr><th>Title</th><th>Author</th><th>Category</th><th>Price</th><th></th></tr></thead>
+            <tbody>
+              {% for book in books %}
+              <tr>
+                <td><div class="mgmt-title-cell">{% if book.cover_image %}<img class="mgmt-thumb" src="{{ book.cover_image.url }}" alt="">{% else %}<div class="mgmt-thumb"></div>{% endif %}<div><strong>{{ book.title }}</strong>{% if book.isbn %}<div style="font-size:0.75rem;color:#aaa;">{{ book.isbn }}</div>{% endif %}</div></div></td>
+                <td>{{ book.author|default:"—" }}</td>
+                <td>{{ book.category.name|default:"—" }}</td>
+                <td>{% if book.is_paid %}<span class="mgmt-tag mgmt-tag-paid">₹{{ book.final_price }}</span>{% else %}<span class="mgmt-tag mgmt-tag-free">Free</span>{% endif %}</td>
+                <td class="mgmt-row-actions">
+                  <button type="button" class="mgmt-btn-edit-text js-edit-book"
+                    data-id="{{ book.id }}"
+                    data-title="{{ book.title }}"
+                    data-author="{{ book.author|default:'' }}"
+                    data-category="{{ book.category_id|default:'' }}"
+                    data-isbn="{{ book.isbn|default:'' }}"
+                    data-paid="{{ book.is_paid|yesno:'true,false' }}"
+                    data-price="{{ book.price|default:0 }}"
+                    data-discount="{{ book.discount|default:0 }}">Edit</button>
+                  <form method="post" action="{% url 'admin_delete_book' book.id %}" style="display:inline;" class="js-confirm-delete" data-confirm-name="{{ book.title }}">{% csrf_token %}<button type="submit" class="mgmt-btn-danger-text">Remove</button></form>
+                </td>
+              </tr>
+              {% empty %}<tr class="mgmt-empty-row"><td colspan="5">No books yet.</td></tr>{% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- CATEGORIES -->
+    <section class="mgmt-panel" id="categories-panel">
+      <div class="mgmt-head"><span class="eyebrow">Organisation</span><h1>Categories</h1><p>Group books by genre or subject.</p></div>
+      <div class="mgmt-grid">
+        <div class="mgmt-card">
+          <h3 id="category-form-heading">Add a category</h3>
+          <div class="mgmt-edit-banner" id="category-edit-banner"><span>Editing an existing category</span><button type="button" id="category-cancel-edit-inline">Cancel edit</button></div>
+          <form id="category-form" method="post" enctype="multipart/form-data" action="{% url 'admin_add_category' %}">
+            {% csrf_token %}
+            <label>Category name *</label><input type="text" name="name" id="category-name" required>
+            <label>Description</label><textarea name="description" id="category-desc"></textarea>
+            <label>Category image</label><input type="file" name="image" id="category-image" accept="image/*">
+            <div class="mgmt-form-actions">
+              <button type="submit" class="mgmt-btn mgmt-btn-primary" id="category-submit-btn">Add category</button>
+              <button type="reset" class="mgmt-btn mgmt-btn-ghost">Clear</button>
+              <button type="button" class="mgmt-btn mgmt-btn-ghost" id="category-cancel-edit" style="display:none;">Cancel edit</button>
+            </div>
+          </form>
+        </div>
+        <div class="mgmt-card">
+          <h3 style="margin-bottom:16px;">Categories ({{ category_count }})</h3>
+          <table class="mgmt-table">
+            <thead><tr><th>Image</th><th>Name</th><th>Description</th><th>Books</th><th></th></tr></thead>
+            <tbody>
+              {% for cat in categories %}
+              <tr>
+                <td>{% if cat.image %}<img class="mgmt-thumb" src="{{ cat.image.url }}" style="width:36px;height:36px;" alt="">{% else %}<div class="mgmt-thumb" style="width:36px;height:36px;"></div>{% endif %}</td>
+                <td><strong>{{ cat.name }}</strong></td>
+                <td>{{ cat.description|default:"—"|truncatewords:12 }}</td>
+                <td>{{ cat.book_total }}</td>
+                <td class="mgmt-row-actions">
+                  <button type="button" class="mgmt-btn-edit-text js-edit-category"
+                    data-id="{{ cat.id }}"
+                    data-name="{{ cat.name }}"
+                    data-desc="{{ cat.description|default:'' }}">Edit</button>
+                  <form method="post" action="{% url 'admin_delete_category' cat.id %}" style="display:inline;" class="js-confirm-delete" data-confirm-name="{{ cat.name }}">{% csrf_token %}<button type="submit" class="mgmt-btn-danger-text">Remove</button></form>
+                </td>
+              </tr>
+              {% empty %}<tr class="mgmt-empty-row"><td colspan="5">No categories yet.</td></tr>{% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- AUTHORS -->
+    <section class="mgmt-panel" id="authors-panel">
+      <div class="mgmt-head"><span class="eyebrow">Contributors</span><h1>Authors</h1><p>Keep a record of every author in the library.</p></div>
+      <div class="mgmt-grid">
+        <div class="mgmt-card">
+          <h3 id="author-form-heading">Add an author</h3>
+          <div class="mgmt-edit-banner" id="author-edit-banner"><span>Editing an existing author</span><button type="button" id="author-cancel-edit-inline">Cancel edit</button></div>
+          <form id="author-form" method="post" enctype="multipart/form-data" action="{% url 'admin_add_author' %}">
+            {% csrf_token %}
+            <label>Full name *</label><input type="text" name="name" id="author-name" required>
+            <label>Nationality</label><input type="text" name="nationality" id="author-nationality">
+            <label>Short bio</label><textarea name="bio" id="author-bio"></textarea>
+            <label>Author photo</label><input type="file" name="image" id="author-image" accept="image/*">
+            <div class="mgmt-form-actions">
+              <button type="submit" class="mgmt-btn mgmt-btn-primary" id="author-submit-btn">Add author</button>
+              <button type="reset" class="mgmt-btn mgmt-btn-ghost">Clear</button>
+              <button type="button" class="mgmt-btn mgmt-btn-ghost" id="author-cancel-edit" style="display:none;">Cancel edit</button>
+            </div>
+          </form>
+        </div>
+        <div class="mgmt-card">
+          <h3 style="margin-bottom:16px;">Authors ({{ author_count }})</h3>
+          <table class="mgmt-table">
+            <thead><tr><th>Photo</th><th>Name</th><th>Nationality</th><th></th></tr></thead>
+            <tbody>
+              {% for a in authors %}
+              <tr>
+                <td>{% if a.image %}<img class="mgmt-thumb-round" src="{{ a.image.url }}" alt="">{% else %}<div class="mgmt-thumb-round" style="background:var(--acc-soft);"></div>{% endif %}</td>
+                <td><strong>{{ a.name }}</strong></td>
+                <td>{{ a.nationality|default:"—" }}</td>
+                <td class="mgmt-row-actions">
+                  <button type="button" class="mgmt-btn-edit-text js-edit-author"
+                    data-id="{{ a.id }}"
+                    data-name="{{ a.name }}"
+                    data-nationality="{{ a.nationality|default:'' }}"
+                    data-bio="{{ a.bio|default:'' }}">Edit</button>
+                  <form method="post" action="{% url 'admin_delete_author' a.id %}" style="display:inline;" class="js-confirm-delete" data-confirm-name="{{ a.name }}">{% csrf_token %}<button type="submit" class="mgmt-btn-danger-text">Remove</button></form>
+                </td>
+              </tr>
+              {% empty %}<tr class="mgmt-empty-row"><td colspan="4">No authors yet.</td></tr>{% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ABOUT -->
+    <section class="mgmt-panel" id="about-panel">
+      <div class="mgmt-head"><span class="eyebrow">Site content</span><h1>About Us</h1><p>Edit the story visitors see on the public About Us page.</p></div>
+      <div class="mgmt-card" style="max-width:760px;">
+        <form method="post" action="{% url 'admin_save_about' %}">
+          {% csrf_token %}
+          <label>Heading</label>
+          <input type="text" name="heading" id="about-heading" value="{{ about.heading }}">
+          <label>Story</label>
+          <textarea name="body" id="about-body" style="min-height:160px;" maxlength="800">{{ about.body }}</textarea>
+          <div class="mgmt-char-count"><span id="about-count">0</span>/800</div>
+          <div class="mgmt-form-actions">
+            <button type="submit" class="mgmt-btn mgmt-btn-primary">Save changes</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- ACCESS -->
+    <section class="mgmt-panel" id="access-panel">
+      <div class="mgmt-head"><span class="eyebrow">Security</span><h1>Access Management</h1><p>Control who can sign in and what they're allowed to manage.</p></div>
+      <div class="mgmt-grid">
+        <div class="mgmt-card">
+          <h3>Add a team member</h3>
+          <form method="post" action="{% url 'admin_grant_access' %}">
+            {% csrf_token %}
+            <label>Full name *</label><input type="text" name="name" required>
+            <label>Email *</label><input type="email" name="email" required>
+            <label>Role *</label>
+            <select name="role" required>
+              <option value="Admin">Admin — full access</option>
+              <option value="Author" selected>Author — manage own books</option>
+              <option value="Viewer">Viewer — read only</option>
+            </select>
+            <label>Temporary password *</label><input type="password" name="password" required>
+            <div class="mgmt-form-actions">
+              <button type="submit" class="mgmt-btn mgmt-btn-primary">Grant access</button>
+            </div>
+          </form>
+        </div>
+        <div class="mgmt-card">
+          <h3 style="margin-bottom:16px;">Team ({{ team_count }})</h3>
+          <table class="mgmt-table">
+            <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+              {% for member in team %}
+              <tr>
+                <td><strong>{{ member.name }}</strong></td>
+                <td>{{ member.email }}</td>
+                <td><span class="mgmt-tag {% if member.role == 'Admin' %}mgmt-tag-admin{% elif member.role == 'Editor' %}mgmt-tag-editor{% else %}mgmt-tag-viewer{% endif %}">{{ member.role }}</span></td>
+                <td>{{ member.status }}</td>
+                <td class="mgmt-row-actions">
+                  <form method="post" action="{% url 'admin_toggle_access' member.id %}" style="display:inline;">{% csrf_token %}<button type="submit" class="mgmt-btn-danger-text">{% if member.status == 'Active' %}Suspend{% else %}Reactivate{% endif %}</button></form>
+                  <form method="post" action="{% url 'admin_remove_access' member.id %}" style="display:inline;" class="js-confirm-delete" data-confirm-name="{{ member.name }}">{% csrf_token %}<button type="submit" class="mgmt-btn-danger-text">Remove</button></form>
+                </td>
+              </tr>
+              {% empty %}<tr class="mgmt-empty-row"><td colspan="5">No team members yet.</td></tr>{% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const $ = (s) => document.querySelector(s);
+  const $all = (s) => document.querySelectorAll(s);
+
+  $all('.mgmt-side-link').forEach(link => {
+    link.addEventListener('click', () => {
+      $all('.mgmt-panel').forEach(p => p.classList.remove('active'));
+      $all('.mgmt-side-link').forEach(l => l.classList.remove('active'));
+      document.getElementById(link.dataset.panel).classList.add('active');
+      link.classList.add('active');
+    });
+  });
+
+  // ---- Delegated "confirm before delete" for all remove forms ----
+  // Replaces inline onsubmit="return confirm('Remove &quot;...&quot;?')" which broke
+  // whenever a title/name contained a quote or HTML character.
+  $all('.js-confirm-delete').forEach(form => {
+    form.addEventListener('submit', (e) => {
+      const name = form.dataset.confirmName || 'this item';
+      if (!confirm(`Remove "${name}"?`)) e.preventDefault();
+    });
+  });
+
+  // ---- Book pricing toggle + edit mode ----
+  const btnFree = $('#btn-free'), btnPaid = $('#btn-paid'), priceFields = $('#price-fields'), pricingHidden = $('#pricing-type-hidden');
+  function setPricing(type){
+    pricingHidden.value = type;
+    if(type === 'Free'){ btnFree.classList.add('active'); btnPaid.classList.remove('active'); priceFields.classList.remove('show'); }
+    else { btnPaid.classList.add('active'); btnFree.classList.remove('active'); priceFields.classList.add('show'); }
+  }
+  btnFree.addEventListener('click', () => setPricing('Free'));
+  btnPaid.addEventListener('click', () => setPricing('Paid'));
+
+  const bookForm = $('#book-form');
+  const bookFormOriginalAction = bookForm.action;
+  function editBook(id, title, author, categoryId, isbn, isPaid, price, discount){
+    $('#book-title').value = title; $('#book-author').value = author; $('#book-category').value = categoryId; $('#book-isbn').value = isbn;
+    setPricing(isPaid ? 'Paid' : 'Free'); $('#book-price').value = price || ''; $('#book-discount').value = discount || '';
+    bookForm.action = `/management/admin/book/${id}/edit/`;
+    $('#book-form-heading').textContent = 'Edit book'; $('#book-submit-btn').textContent = 'Update book';
+    $('#book-edit-banner').classList.add('show'); $('#book-cancel-edit').style.display = 'inline-flex';
+    document.querySelector('#books-panel .mgmt-card').scrollIntoView({behavior:'smooth', block:'start'});
+  }
+  function cancelBookEdit(){
+    bookForm.reset(); bookForm.action = bookFormOriginalAction; setPricing('Free');
+    $('#book-form-heading').textContent = 'Add a book'; $('#book-submit-btn').textContent = 'Add book';
+    $('#book-edit-banner').classList.remove('show'); $('#book-cancel-edit').style.display = 'none';
+  }
+  $('#book-cancel-edit').addEventListener('click', cancelBookEdit);
+  $('#book-cancel-edit-inline').addEventListener('click', cancelBookEdit);
+
+  // Delegated click for book Edit buttons — reads data-* attributes instead of
+  // inline onclick(...) args, so titles/authors/ISBNs with quotes or HTML never
+  // break the script.
+  $all('.js-edit-book').forEach(btn => {
+    btn.addEventListener('click', () => {
+      editBook(
+        btn.dataset.id,
+        btn.dataset.title,
+        btn.dataset.author,
+        btn.dataset.category,
+        btn.dataset.isbn,
+        btn.dataset.paid === 'true',
+        btn.dataset.price,
+        btn.dataset.discount
+      );
+    });
+  });
+
+  // ---- Category edit mode ----
+  const categoryForm = $('#category-form');
+  const categoryFormOriginalAction = categoryForm.action;
+  function editCategory(id, name, desc){
+    $('#category-name').value = name; $('#category-desc').value = desc;
+    categoryForm.action = `/management/admin/category/${id}/edit/`;
+    $('#category-form-heading').textContent = 'Edit category'; $('#category-submit-btn').textContent = 'Update category';
+    $('#category-edit-banner').classList.add('show'); $('#category-cancel-edit').style.display = 'inline-flex';
+    document.querySelector('#categories-panel .mgmt-card').scrollIntoView({behavior:'smooth', block:'start'});
+  }
+  function cancelCategoryEdit(){
+    categoryForm.reset(); categoryForm.action = categoryFormOriginalAction;
+    $('#category-form-heading').textContent = 'Add a category'; $('#category-submit-btn').textContent = 'Add category';
+    $('#category-edit-banner').classList.remove('show'); $('#category-cancel-edit').style.display = 'none';
+  }
+  $('#category-cancel-edit').addEventListener('click', cancelCategoryEdit);
+  $('#category-cancel-edit-inline').addEventListener('click', cancelCategoryEdit);
+
+  $all('.js-edit-category').forEach(btn => {
+    btn.addEventListener('click', () => {
+      editCategory(btn.dataset.id, btn.dataset.name, btn.dataset.desc);
+    });
+  });
+
+  // ---- Author edit mode ----
+  const authorForm = $('#author-form');
+  const authorFormOriginalAction = authorForm.action;
+  function editAuthor(id, name, nationality, bio){
+    $('#author-name').value = name; $('#author-nationality').value = nationality; $('#author-bio').value = bio;
+    authorForm.action = `/management/admin/author/${id}/edit/`;
+    $('#author-form-heading').textContent = 'Edit author'; $('#author-submit-btn').textContent = 'Update author';
+    $('#author-edit-banner').classList.add('show'); $('#author-cancel-edit').style.display = 'inline-flex';
+    document.querySelector('#authors-panel .mgmt-card').scrollIntoView({behavior:'smooth', block:'start'});
+  }
+  function cancelAuthorEdit(){
+    authorForm.reset(); authorForm.action = authorFormOriginalAction;
+    $('#author-form-heading').textContent = 'Add an author'; $('#author-submit-btn').textContent = 'Add author';
+    $('#author-edit-banner').classList.remove('show'); $('#author-cancel-edit').style.display = 'none';
+  }
+  $('#author-cancel-edit').addEventListener('click', cancelAuthorEdit);
+  $('#author-cancel-edit-inline').addEventListener('click', cancelAuthorEdit);
+
+  $all('.js-edit-author').forEach(btn => {
+    btn.addEventListener('click', () => {
+      editAuthor(btn.dataset.id, btn.dataset.name, btn.dataset.nationality, btn.dataset.bio);
+    });
+  });
+
+  // ---- About char count ----
+  const aboutBody = $('#about-body');
+  function updateCharCount(){ $('#about-count').textContent = aboutBody.value.length; }
+  if(aboutBody){ aboutBody.addEventListener('input', updateCharCount); updateCharCount(); }
+</script>
+{% endblock %}

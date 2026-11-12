@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}All Categories - Sanza Library{% endblock %}
+
+{% block content %}
+<section class="section" id="all-categories-section">
+    <div class="section-head">
+        <h2>All Categories</h2>
+    </div>
+
+    <div class="category-grid" id="allCategoryGrid">
+        {% for cat in categories %}
+        {% if cat.image_url %}
+        <div class="category-card image-cat" data-cat="{{ cat.name }}" onclick="window.location.href='{% url 'category_books' cat.name %}'" style="background-image:url('{{ cat.image_url }}');">
+            <div class="cat-overlay"><p>{{ cat.name }}</p></div>
+        </div>
+        {% else %}
+        <div class="category-card" data-cat="{{ cat.name }}" onclick="window.location.href='{% url 'category_books' cat.name %}'">
+            <div class="cat-icon {{ cat.css_class }}"><i class="{{ cat.icon }}"></i></div>
+            <p>{{ cat.name }}</p>
+        </div>
+        {% endif %}
+        {% empty %}
+        <p class="empty-state">No categories yet — they'll show up here once books are added.</p>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

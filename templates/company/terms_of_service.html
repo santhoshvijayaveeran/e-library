@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Terms of Service - Sanza Library{% endblock %}
+{% block content %}
+<section class="section" style="padding-top:32px;">
+    <div class="section-head">
+        <div>
+            <h2><i class="fa-solid fa-file-contract"></i> Terms of Service</h2>
+            <p style="color:#888; font-size:13px; margin-top:4px;">Last updated: July 15, 2026</p>
+        </div>
+        <a href="{% url 'home' %}" style="color:#6c5ce7; text-decoration:none; font-weight:600;">
+            <i class="fa-solid fa-chevron-left"></i> Back to Home
+        </a>
+    </div>
+
+    <div class="policy-toc">
+        <h4>On this page</h4>
+        <ol>
+            <li><a href="#acceptance">Acceptance of Terms</a></li>
+            <li><a href="#accounts">Account Registration</a></li>
+            <li><a href="#borrowing">Borrowing & Returning Books</a></li>
+            <li><a href="#conduct">Acceptable Use</a></li>
+            <li><a href="#liability">Limitation of Liability</a></li>
+            <li><a href="#termination">Termination</a></li>
+            <li><a href="#changes">Changes to These Terms</a></li>
+        </ol>
+    </div>
+
+    <div class="policy-block" id="acceptance">
+        <h3>1. Acceptance of Terms</h3>
+        <p>By creating an account or using Sanza Library, you agree to be bound by these Terms of Service. If you do not agree with any part of these terms, please do not use the platform.</p>
+    </div>
+
+    <div class="policy-block" id="accounts">
+        <h3>2. Account Registration</h3>
+        <p>You must provide accurate information when creating your account and are responsible for keeping your login credentials secure. You're responsible for all activity that happens under your account.</p>
+    </div>
+
+    <div class="policy-block" id="borrowing">
+        <h3>3. Borrowing & Returning Books</h3>
+        <ul>
+            <li>Borrowed titles must be returned by the due date shown in "My Library"</li>
+            <li>Late returns may temporarily limit your ability to borrow new titles</li>
+            <li>Digital copies are licensed for personal reading only and may not be redistributed</li>
+        </ul>
+    </div>
+
+    <div class="policy-block" id="conduct">
+        <h3>4. Acceptable Use</h3>
+        <p>You agree not to misuse Sanza Library, including attempting to copy or redistribute copyrighted content, interfering with the platform's operation, or accessing accounts that are not your own.</p>
+    </div>
+
+    <div class="policy-block" id="liability">
+        <h3>5. Limitation of Liability</h3>
+        <p>Sanza Library is provided "as is." We do our best to keep the catalog accurate and the service reliable, but we are not liable for any indirect or incidental damages arising from your use of the platform.</p>
+    </div>
+
+    <div class="policy-block" id="termination">
+        <h3>6. Termination</h3>
+        <p>We may suspend or terminate accounts that violate these terms. You may also close your account at any time from your profile settings.</p>
+    </div>
+
+    <div class="policy-block" id="changes">
+        <h3>7. Changes to These Terms</h3>
+        <p>We may revise these Terms of Service periodically. Continued use of Sanza Library after changes take effect means you accept the updated terms.</p>
+    </div>
+
+    <div class="policy-contact">
+        Questions about these terms? Reach us anytime at <a href="mailto:support@sanzalibrary.com">support@sanzalibrary.com</a>.
+    </div>
+</section>
+
+<style>
+    .policy-toc{background:#faf9ff; border:1px solid #eee; border-radius:12px; padding:22px 26px; margin:24px 0 32px;}
+    .policy-toc h4{font-size:14px; margin-bottom:12px;}
+    .policy-toc ol{margin-left:18px;}
+    .policy-toc li{margin-bottom:7px; font-size:13.5px;}
+    .policy-toc a{color:#6c5ce7; text-decoration:none; font-weight:500;}
+    .policy-toc a:hover{text-decoration:underline;}
+    .policy-block{margin-bottom:28px; max-width:760px;}
+    .policy-block h3{font-size:18px; margin-bottom:10px;}
+    .policy-block p{font-size:14px; color:#444; margin-bottom:10px; line-height:1.7;}
+    .policy-block ul{margin:0 0 10px 20px; font-size:14px; color:#444;}
+    .policy-block li{margin-bottom:6px;}
+    .policy-contact{background:#fdf1e2; border-radius:12px; padding:22px 26px; font-size:14px; color:#4a3a1c; max-width:760px;}
+    .policy-contact a{color:#6c5ce7; font-weight:600; text-decoration:none;}
+</style>
+{% endblock %}

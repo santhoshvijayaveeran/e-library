@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Privacy Policy - Sanza Library{% endblock %}
+{% block content %}
+<section class="section" style="padding-top:32px;">
+    <div class="section-head">
+        <div>
+            <h2><i class="fa-solid fa-shield-halved"></i> Privacy Policy</h2>
+            <p style="color:#888; font-size:13px; margin-top:4px;">Last updated: July 15, 2026</p>
+        </div>
+        <a href="{% url 'home' %}" style="color:#6c5ce7; text-decoration:none; font-weight:600;">
+            <i class="fa-solid fa-chevron-left"></i> Back to Home
+        </a>
+    </div>
+
+    <div class="policy-toc">
+        <h4>On this page</h4>
+        <ol>
+            <li><a href="#collect">Information We Collect</a></li>
+            <li><a href="#use">How We Use Your Information</a></li>
+            <li><a href="#sharing">Sharing of Information</a></li>
+            <li><a href="#security">Data Security</a></li>
+            <li><a href="#rights">Your Rights and Choices</a></li>
+            <li><a href="#cookies">Cookies</a></li>
+            <li><a href="#changes">Changes to This Policy</a></li>
+        </ol>
+    </div>
+
+    <div class="policy-block" id="collect">
+        <h3>1. Information We Collect</h3>
+        <p>When you create an account or use Sanza Library, we may collect the following:</p>
+        <ul>
+            <li>Account details such as your name, email address, and password</li>
+            <li>Borrowing history and reading preferences</li>
+            <li>Device and usage information, such as browser type and pages visited</li>
+        </ul>
+    </div>
+
+    <div class="policy-block" id="use">
+        <h3>2. How We Use Your Information</h3>
+        <p>We use the information we collect to operate and improve Sanza Library, including to:</p>
+        <ul>
+            <li>Create and maintain your account</li>
+            <li>Process book borrowing and returns</li>
+            <li>Recommend books based on your interests</li>
+            <li>Communicate updates, confirmations, and support responses</li>
+        </ul>
+    </div>
+
+    <div class="policy-block" id="sharing">
+        <h3>3. Sharing of Information</h3>
+        <p>We do not sell your personal information. We may share limited data with trusted service providers who help us run Sanza Library, such as hosting and email delivery, and only to the extent needed for them to perform their services.</p>
+    </div>
+
+    <div class="policy-block" id="security">
+        <h3>4. Data Security</h3>
+        <p>We use reasonable technical and organizational measures to protect your information from unauthorized access, loss, or misuse. No method of transmission over the internet is completely secure, so we encourage you to use a strong, unique password for your account.</p>
+    </div>
+
+    <div class="policy-block" id="rights">
+        <h3>5. Your Rights and Choices</h3>
+        <p>You may access, update, or delete your account information at any time from your profile settings. You can also contact us to request a copy of your data or ask that it be removed from our systems.</p>
+    </div>
+
+    <div class="policy-block" id="cookies">
+        <h3>6. Cookies</h3>
+        <p>We use cookies to keep you signed in and to understand how readers use the site. You can disable cookies in your browser settings, though some features of Sanza Library may not work as intended.</p>
+    </div>
+
+    <div class="policy-block" id="changes">
+        <h3>7. Changes to This Policy</h3>
+        <p>We may update this Privacy Policy from time to time. If we make material changes, we'll notify you by email or through a notice on the site before the changes take effect.</p>
+    </div>
+
+    <div class="policy-contact">
+        Questions about this policy? Reach us anytime at <a href="mailto:support@sanzalibrary.com">support@sanzalibrary.com</a>.
+    </div>
+</section>
+
+<style>
+    .policy-toc{background:#faf9ff; border:1px solid #eee; border-radius:12px; padding:22px 26px; margin:24px 0 32px;}
+    .policy-toc h4{font-size:14px; margin-bottom:12px;}
+    .policy-toc ol{margin-left:18px;}
+    .policy-toc li{margin-bottom:7px; font-size:13.5px;}
+    .policy-toc a{color:#6c5ce7; text-decoration:none; font-weight:500;}
+    .policy-toc a:hover{text-decoration:underline;}
+    .policy-block{margin-bottom:28px; max-width:760px;}
+    .policy-block h3{font-size:18px; margin-bottom:10px;}
+    .policy-block p{font-size:14px; color:#444; margin-bottom:10px; line-height:1.7;}
+    .policy-block ul{margin:0 0 10px 20px; font-size:14px; color:#444;}
+    .policy-block li{margin-bottom:6px;}
+    .policy-contact{background:#fdf1e2; border-radius:12px; padding:22px 26px; font-size:14px; color:#4a3a1c; max-width:760px;}
+    .policy-contact a{color:#6c5ce7; font-weight:600; text-decoration:none;}
+</style>
+{% endblock %}

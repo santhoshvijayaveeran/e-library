@@ -1,0 +1,1123 @@
+{% load socialaccount %}
+{% load group_filters %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Sanza Library{% endblock %}</title>
+
+    <!-- Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="{% static 'css/library.css' %}">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:'Poppins',sans-serif;
+}
+
+body{
+    background:#f5f5f5;
+}
+
+header{
+    background: #f9f9f8;
+    box-shadow:0 3px 15px rgba(0,0,0,.08);
+    position:relative;
+    z-index:10;
+}
+
+.navbar{
+    width:95%;
+    margin:auto;
+    height:80px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+/* Logo */
+
+.logo{
+    display:flex;
+    align-items:center;
+    gap:12px;
+}
+
+@keyframes logoIconPop{
+    0%{ transform:scale(0.3) rotate(-25deg); opacity:0; }
+    60%{ transform:scale(1.15) rotate(8deg); opacity:1; }
+    100%{ transform:scale(1) rotate(0deg); opacity:1; }
+}
+
+@keyframes logoTextSlide{
+    0%{ transform:translateX(-14px); opacity:0; }
+    100%{ transform:translateX(0); opacity:1; }
+}
+
+@keyframes logoIconWiggle{
+    0%,100%{ transform:rotate(0deg); }
+    25%{ transform:rotate(-8deg); }
+    75%{ transform:rotate(8deg); }
+}
+
+.logo i{
+    font-size:34px;
+    color:#2563eb;
+    display:inline-block;
+    animation:logoIconPop .7s cubic-bezier(.34,1.56,.64,1) both;
+}
+
+.logo:hover i{
+    animation:logoIconWiggle .5s ease;
+}
+
+.logo h2{
+    color:#2563eb;
+    font-size:28px;
+    line-height:25px;
+    animation:logoTextSlide .6s ease .15s both;
+}
+
+.logo span{
+    color:#777;
+    font-size:13px;
+    display:inline-block;
+    animation:logoTextSlide .6s ease .3s both;
+}
+
+/* Menu */
+
+.menu{
+    display:flex;
+    list-style:none;
+    gap:35px;
+}
+
+.menu a{
+    text-decoration:none;
+    color:#222;
+    font-size:15px;
+    font-weight:500;
+    transition:.3s;
+    position:relative;
+}
+
+.menu a:hover{
+    color:#2563eb;
+}
+
+.menu .active{
+    color:#2563eb;
+}
+
+.menu .active::after{
+    content:'';
+    position:absolute;
+    left:0;
+    bottom:-12px;
+    width:100%;
+    height:3px;
+    background:#2563eb;
+    border-radius:5px;
+}
+
+/* Right Side */
+
+.right-side{
+    display:flex;
+    align-items:center;
+    gap:15px;
+}
+
+/* ===================== AUTH MODAL (Login / Signup) ===================== */
+
+.modal-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(10,14,26,.55);
+    backdrop-filter:blur(2px);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index:200;
+    opacity:0;
+    visibility:hidden;
+    transition:.2s ease;
+    padding:20px;
+}
+
+.modal-overlay.open{
+    opacity:1;
+    visibility:visible;
+}
+
+.auth-modal{
+    background:#fff;
+    width:100%;
+    max-width:380px;
+    border-radius:16px;
+    box-shadow:0 30px 70px rgba(0,0,0,.3);
+    padding:32px 30px;
+    position:relative;
+    transform:translateY(-16px) scale(.98);
+    transition:.25s ease;
+}
+
+.modal-overlay.open .auth-modal{
+    transform:translateY(0) scale(1);
+}
+
+.modal-close{
+    position:absolute;
+    top:18px;
+    right:18px;
+    width:30px;
+    height:30px;
+    border-radius:50%;
+    border:none;
+    background:#f2f2f2;
+    color:#666;
+    font-size:14px;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition:.2s;
+}
+
+.modal-close:hover{ background:#e6e6e6; color:#111; }
+
+.auth-modal h4{
+    font-family:'Playfair Display',serif;
+    font-size:22px;
+    color:#111;
+    margin-bottom:6px;
+}
+
+.auth-modal p.sub{
+    font-size:13px;
+    color:#888;
+    margin-bottom:20px;
+}
+
+.auth-modal .field{
+    margin-bottom:15px;
+}
+
+.auth-modal label{
+    display:block;
+    font-size:12.5px;
+    font-weight:500;
+    color:#333;
+    margin-bottom:6px;
+}
+
+.auth-modal .input-wrap{
+    position:relative;
+}
+
+.auth-modal .input-wrap i{
+    position:absolute;
+    left:15px;
+    top:50%;
+    transform:translateY(-50%);
+    color:#999;
+    font-size:13px;
+}
+
+.auth-modal .input-wrap i.toggle-pass{
+    left:auto;
+    right:15px;
+    cursor:pointer;
+}
+
+.auth-modal input{
+    width:100%;
+    height:46px;
+    border:1px solid #e2e2e2;
+    border-radius:9px;
+    padding:0 42px;
+    outline:none;
+    font-size:14px;
+    transition:.2s;
+}
+
+.auth-modal input:focus{
+    border-color:#2563eb;
+    box-shadow:0 0 0 3px rgba(37,99,235,.12);
+}
+
+.auth-modal .row-between{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    font-size:12.5px;
+    margin-bottom:18px;
+}
+
+.auth-modal .row-between a{
+    color:#2563eb;
+    text-decoration:none;
+    font-weight:500;
+}
+
+.remember-me {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: auto;
+    white-space: nowrap;
+}
+
+.login-modal .remember-me input[type="checkbox"] {   /* use your modal's real class */
+    all: revert;          /* drops the global input width/height/padding/border */
+    width: 8px;
+    height: 8px;
+    margin: 0;
+    flex: 0 0 18px;
+    accent-color: #2563eb;
+}
+
+.auth-modal .row-between a:hover{ text-decoration:underline; }
+
+.auth-modal .row-between label{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    color:#555;
+    margin:0;
+    font-weight:400;
+}
+
+.auth-modal .btn-submit{
+    width:100%;
+    height:46px;
+    background:#2563eb;
+    color:#fff;
+    border:none;
+    border-radius:9px;
+    font-size:14.5px;
+    font-weight:500;
+    cursor:pointer;
+    transition:.2s;
+    margin-bottom:16px;
+}
+
+.auth-modal .btn-submit:hover{ background:#1d4ed8; }
+
+.auth-modal .signup-line{
+    text-align:center;
+    font-size:13.5px;
+    color:#555;
+}
+
+.auth-modal .signup-line a{
+    color:#2563eb;
+    text-decoration:none;
+    font-weight:500;
+    cursor:pointer;
+}
+
+.auth-modal .signup-line a:hover{ text-decoration:underline; }
+
+.auth-modal .error-msg{
+    display:none;
+    background:#fde3e8;
+    color:#c02c47;
+    font-size:12.5px;
+    padding:10px 13px;
+    border-radius:8px;
+    margin-bottom:16px;
+}
+
+.auth-modal .error-msg.show{ display:block; }
+
+.auth-modal .success-msg{
+    display:none;
+    background:#e3f7e8;
+    color:#1f7a3f;
+    font-size:12.5px;
+    padding:10px 13px;
+    border-radius:8px;
+    margin-bottom:16px;
+}
+
+.auth-modal .success-msg.show{ display:block; }
+
+/* Logged-in user pill (navbar) */
+
+.user-pill{
+    display:none;
+    align-items:center;
+    gap:10px;
+    background:#eef3ff;
+    border-radius:30px;
+    padding:6px 8px 6px 14px;
+}
+
+.user-pill.show{ display:flex; }
+
+.user-pill .avatar{
+    width:32px;
+    height:32px;
+    border-radius:50%;
+    background:#2563eb;
+    color:#fff;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:13px;
+    font-weight:600;
+    text-transform:uppercase;
+}
+
+.user-pill span{
+    font-size:13.5px;
+    font-weight:500;
+    color:#222;
+    max-width:150px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+}
+
+.logout-btn{
+    background:#fff;
+    border:1px solid #ddd;
+    color:#555;
+    padding:7px 14px;
+    border-radius:20px;
+    font-size:12.5px;
+    font-weight:500;
+    cursor:pointer;
+    transition:.2s;
+    text-decoration:none;
+    display:inline-block;
+}
+
+.logout-btn:hover{ background:#fde3e8; border-color:#f3c2cd; color:#c02c47; }
+
+.auth-buttons{
+    display:flex;
+    align-items:center;
+    gap:15px;
+}
+
+@media(max-width:480px){
+    .auth-modal{ padding:26px 22px; }
+}
+
+/* Search (navbar) */
+
+.search-box{
+    position:relative;
+}
+
+.search-box input{
+    width:270px;
+    height:42px;
+    border:1px solid #ddd;
+    border-radius:8px;
+    padding-left:18px;
+    padding-right:45px;
+    outline:none;
+}
+
+.search-box i{
+    position:absolute;
+    right:16px;
+    top:50%;
+    transform:translateY(-50%);
+    color:#777;
+    cursor:pointer;
+}
+
+/* Buttons */
+
+.login{
+    background:#2563eb;
+    color:#fff;
+    border:none;
+    padding:11px 22px;
+    border-radius:8px;
+    cursor:pointer;
+    font-size:14px;
+    text-decoration:none;
+    display:inline-block;
+}
+
+.signup{
+    background:#fff;
+    color:#2563eb;
+    border:1px solid #2563eb;
+    padding:11px 22px;
+    border-radius:8px;
+    cursor:pointer;
+    font-size:14px;
+    text-decoration:none;
+    display:inline-block;
+}
+
+.login:hover{
+    background:#1d4ed8;
+}
+
+.signup:hover{
+    background:#2563eb;
+    color:#fff;
+}
+
+
+
+@media(max-width:1200px){
+    .menu{ display:none; }
+    .search-box input{ width:220px; }
+}
+
+@media(max-width:768px){
+    .navbar{
+        flex-wrap:wrap;
+        height:auto;
+        padding:15px 0;
+        gap:20px;
+    }
+    .right-side{ width:100%; justify-content:center; flex-wrap:wrap; }
+    .search-box input{ width:100%; }
+}
+
+.or-divider{
+    display:flex;
+    align-items:center;
+    text-align:center;
+    color:#999;
+    font-size:12px;
+    margin:16px 0;
+}
+.or-divider::before,
+.or-divider::after{
+    content:'';
+    flex:1;
+    border-bottom:1px solid #eee;
+}
+.or-divider span{ padding:0 12px; }
+
+.btn-google{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    width:100%;
+    height:46px;
+    border:1px solid #e2e2e2;
+    border-radius:9px;
+    background:#fff;
+    color:#333;
+    font-size:14px;
+    font-weight:500;
+    text-decoration:none;
+    margin-bottom:16px;
+    transition:.2s;
+}
+.btn-google:hover{
+    background:#f7f7f7;
+    border-color:#ccc;
+}
+
+.role-btn{
+    padding:8px 16px;
+    border-radius:8px;
+    font-size:13.5px;
+    font-weight:500;
+    text-decoration:none;
+    transition:.2s;
+}
+.admin-btn{
+    background:#111;
+    color:#fff;
+}
+.admin-btn:hover{ background:#333; }
+.author-btn{
+    background:#fff;
+    color:#2563eb;
+    border:1px solid #2563eb;
+}
+.author-btn:hover{ background:#2563eb; color:#fff; }
+  :root{
+    --brown-dark:#241609;
+    --brown-mid:#7c5330;
+    --cream:#f6efe2;
+    --blue:#2f5fe0;
+    --blue-light:#6f92ec;
+    --line:rgba(246,239,226,0.12);
+  }
+
+  .site-footer{
+    background: #efb3a6;
+    color:var(--cream);
+    padding:64px 48px 0;
+    font-family:'Segoe UI',Arial,sans-serif;
+    margin-top: 200px;
+  }
+
+  .footer-inner{
+    max-width:1200px;
+    margin:0 auto;
+    display:grid;
+    grid-template-columns:1.6fr 1fr 1fr 1.3fr;
+    gap:40px;
+    padding-bottom:48px;
+    border-bottom:1px solid var(--line);
+  }
+
+  .footer-brand-row{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+  .footer-logo-icon{
+    width:34px;height:34px;border-radius:8px;
+    background:var(--blue);
+    display:flex;align-items:center;justify-content:center;
+    color:#fff;font-size:18px;
+  }
+  .footer-brand-name{font-size:22px;font-weight:700;color: #020100;letter-spacing:.2px;}
+  .footer-tagline{font-size:13px;color: #020100;margin:0 0 20px;}
+  .footer-desc{font-size:14px;line-height:1.7;color: #020100;margin:0 0 24px;max-width:320px;}
+
+  .social-row{display:flex;gap:10px;}
+  .social-btn{
+    width:36px;height:36px;border-radius:50%;
+    border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;
+    color:var(--cream);text-decoration:none;
+    font-size:14px;
+    transition:background .2s,border-color .2s,transform .2s;
+  }
+  .social-btn:hover{background:var(--blue);border-color:var(--blue);transform:translateY(-2px);}
+
+  .footer-col h4{
+    font-size:14px;letter-spacing:.08em;text-transform:uppercase;
+    color: #020100;margin:0 0 20px;font-weight:600;
+  }
+  .footer-col ul{list-style:none;margin:0;padding:0;}
+  .footer-col li{margin-bottom:12px;}
+  .footer-col a{
+    color: #020100;text-decoration:none;font-size:14px;
+    transition:color .2s,padding-left .2s;
+    display:inline-block;
+  }
+  .footer-col a:hover{color:var(--blue-light);padding-left:4px;}
+
+  .newsletter p{font-size:14px;line-height:1.6;color: #020100;margin:0 0 16px;}
+  .newsletter-form{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;}
+  .newsletter-form input{
+    flex:1;border:1px solid #000;background:transparent;color: #020100;
+    padding:12px 14px;font-size:13px;outline:none;
+  }
+  .newsletter-form input::placeholder{color: #020100;}
+  .newsletter-form button{
+    border:none;background:var(--blue);color: #fdfcfb;
+    padding:0 18px;font-size:13px;font-weight:600;cursor:pointer;
+    transition:background .2s;
+  }
+  .newsletter-form button:hover{background:#1e46c4;}
+  .newsletter-note{font-size:12px;color:#8a7a68;margin-top:10px;}
+
+  .footer-bottom{
+    max-width:1200px;margin:0 auto;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:22px 0;font-size:13px;color:#8a7a68;
+    flex-wrap:wrap;gap:12px;
+  }
+  .footer-bottom-links{display:flex;gap:24px;flex-wrap:wrap;}
+  .footer-bottom-links a{color:#8a7a68;text-decoration:none;}
+  .footer-bottom-links a:hover{color:var(--blue-light);}
+
+  @media (max-width:900px){
+    .footer-inner{grid-template-columns:1fr 1fr;}
+  }
+  @media (max-width:560px){
+    .site-footer{padding:48px 24px 0;}
+    .footer-inner{grid-template-columns:1fr;}
+  }
+    :root {
+    --bg: #f5f5f3; --card: #ffffff; --border: #e5e3dd;
+    --text-primary: #1a1a18; --text-secondary: #6b6a63; --text-muted: #9a988f;
+    --accent: #1d6fd8; --accent-bg: #e8f1fc;
+    --green: #1f7a3d; --green-bg: #e6f4ea;
+    --amber: #a15c00; --amber-bg: #fdf1de;
+    --purple: #6b3fa0; --purple-bg: #f1e9f9;
+    --danger: #d0342c;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text-primary); }
+  header.topbar { display: flex; align-items: center; justify-content: space-between; background: var(--card); border-bottom: 1px solid var(--border); padding: 14px 24px; }
+  .brand { font-size: 18px; font-weight: 700; }
+  .bell-wrap { position: relative; cursor: pointer; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
+  .bell-wrap:hover { background: #f0efeb; }
+  .bell-wrap svg { width: 22px; height: 22px; }
+  .bell-wrap.ring svg { animation: ring 0.4s ease; }
+  @keyframes ring { 0%{transform:rotate(0)} 25%{transform:rotate(14deg)} 50%{transform:rotate(-12deg)} 75%{transform:rotate(6deg)} 100%{transform:rotate(0)} }
+  .badge { position: absolute; top: 2px; right: 2px; background: var(--danger); color: #fff; font-size: 10px; font-weight: 700; min-width: 16px; height: 16px; border-radius: 8px; display: flex; align-items: center; justify-content: center; padding: 0 4px; }
+  .badge.hidden { display: none; }
+  .panel { position: absolute; right: 24px; top: 58px; width: 380px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; max-height: 480px; overflow-y: auto; box-shadow: 0 8px 24px rgba(0,0,0,0.1); display: none; z-index: 50; }
+  .panel.open { display: block; }
+  .panel-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 18px; font-size: 13px; color: var(--text-secondary); border-bottom: 1px solid var(--border); }
+  .panel-header span.link { color: var(--accent); cursor: pointer; font-weight: 600; }
+  .notif { display: flex; gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--border); cursor: pointer; position: relative; }
+  .notif:last-child { border-bottom: none; }
+  .notif:hover { background: #fafaf8; }
+  .notif.read { opacity: 0.55; }
+  .thumb { width: 48px; height: 64px; border-radius: 6px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+  .thumb.new_arrival { background: var(--accent-bg); color: var(--accent); }
+  .thumb.due_soon { background: var(--amber-bg); color: var(--amber); }
+  .thumb.recommended { background: var(--purple-bg); color: var(--purple); }
+  .thumb.returned { background: #f0efeb; color: var(--text-secondary); }
+  .tag { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 4px; margin-bottom: 5px; text-transform: uppercase; }
+  .tag.new_arrival { background: var(--green-bg); color: var(--green); }
+  .tag.due_soon { background: var(--amber-bg); color: var(--amber); }
+  .tag.recommended { background: var(--purple-bg); color: var(--purple); }
+  .notif-title { margin: 0; font-size: 14px; font-weight: 600; }
+  .notif-sub { margin: 3px 0 0; font-size: 12.5px; color: var(--text-secondary); }
+  .notif-time { margin: 5px 0 0; font-size: 11px; color: var(--text-muted); }
+  .dot { position: absolute; top: 18px; right: 18px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+  .empty { padding: 40px 18px; text-align: center; color: var(--text-muted); font-size: 13px; }
+.toast-notification {
+    position: fixed;
+    top: 85px;
+    left: 93%;
+    transform: translateX(-50%) translateY(-100px);
+    background: #289450;
+    color: white;
+    padding: 14px 24px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    font-weight: 600;
+    z-index: 9999;
+    opacity: 0;
+    transition: all 0.35s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+    width: max-content;
+    max-width: 90vw;
+}
+
+.toast-notification.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+}
+
+.toast-notification.error {
+    background: #dc2626;
+}
+
+
+{% block extra_css %}{% endblock %}
+</style>
+{% block extra_head %}{% endblock %}
+</head>
+<body>
+
+<header>
+    <nav class="navbar">
+
+        <!-- Logo -->
+<a href="{% url 'home' %}" class="logo-section" style="text-decoration: none; color: inherit;">
+        <div class="logo">
+            <i class="fa-solid fa-book-open"></i>
+            <div class="logo-text">
+                <h2>Sanza Library</h2>
+                <span>Read. Learn. Grow.</span>
+            </div>
+        </div>
+</a>
+        <!-- Menu -->
+        <ul class="menu">
+            <li><a href="{% url 'home' %}" class="{% block nav_home_active %}{% endblock %}">Home</a></li>
+            <li><a href="{% url 'books' %}">Books</a></li>
+            <li><a href="{% url 'my_library' %}">My Library</a></li>
+            <li><a href="{% url 'about' %}">About Us</a></li>
+        </ul>
+
+        <!-- Right Side -->
+<div class="right-side">
+
+    <div class="search-box">
+        <input type="text" id="navSearchInput" placeholder="Search...">
+        <i class="fa-solid fa-magnifying-glass"></i>
+    </div>
+
+    {% if user.is_authenticated %}
+
+        {% if user|has_group:"Admin" %}
+            <a href="{% url 'management' %}" class="role-btn admin-btn">Admin Panel</a>
+        {% endif %}
+        {% if user|has_group:"Author" %}
+            <a href="{% url 'management' %}" class="role-btn author-btn">Author Panel</a>
+        {% endif %}
+    {% endif %}
+
+    {% if user.is_authenticated %}
+    <div class="user-pill show" id="userPill">
+        <div class="avatar" id="userAvatar">{{ user.first_name|default:user.username|slice:":1"|upper }}</div>
+        <span id="userName">{{ user.first_name|default:user.username }}</span>
+        <a href="{% url 'logout' %}" class="logout-btn" id="logoutBtn">Logout</a>
+    </div>
+    {% else %}
+    <div class="auth-buttons" id="authButtons">
+        <button type="button" class="login" id="loginBtn">Login</button>
+        <button type="button" class="signup" id="signupBtn">Sign Up</button>
+    </div>
+    {% endif %}
+</div>
+
+    </nav>
+</header>
+ 
+<div class="panel" id="panel">
+  <div class="panel-header">
+    <span id="unreadLabel">Notifications</span>
+    <span class="link" onclick="markAllRead()">Mark all read</span>
+  </div>
+  <div id="notifList"></div>
+</div>
+
+
+<!-- ===================== AUTH MODALS ===================== -->
+{% if not user.is_authenticated %}
+<div class="modal-overlay" id="loginOverlay">
+    <div class="auth-modal">
+        <button type="button" class="modal-close" data-close="loginOverlay"><i class="fa-solid fa-xmark"></i></button>
+
+        <h4>Welcome back</h4>
+        <p class="sub">Log in to continue your reading journey.</p>
+
+        {% for message in messages %}
+            {% if message.tags == 'error' %}<div class="error-msg show">{{ message }}</div>{% endif %}
+            {% if message.tags == 'success' %}<div class="success-msg show">{{ message }}</div>{% endif %}
+        {% endfor %}
+
+        <form id="loginForm" method="POST" action="{% url 'login' %}">
+            {% csrf_token %}
+            <div class="field">
+                <label for="loginUsername">Email</label>
+                <div class="input-wrap">
+                    <i class="fa-solid fa-user"></i>
+                    <input type="email" name="email" id="loginUsername" placeholder="Enter your email" required>
+                </div>
+            </div>
+
+            <div class="field">
+                <label for="loginPassword">Password</label>
+                <div class="input-wrap">
+                    <i class="fa-solid fa-lock"></i>
+                    <input type="password" name="password" id="loginPassword" placeholder="Enter your password" required>
+                    <i class="fa-regular fa-eye toggle-pass" id="loginTogglePass"></i>
+                </div>
+            </div>
+
+            <div class="row-between">
+                <label><input type="checkbox"> Remember me</label>
+                <a href="#">Forgot password?</a>
+            </div>
+
+            <button type="submit" class="btn-submit">Login</button>
+        </form>
+
+        <div class="or-divider"><span>OR</span></div>
+
+        <a href="{% provider_login_url 'google' process='login' %}" class="btn-google">
+            <img src="https://www.svgrepo.com/show/475656/google-color.svg" width="18" alt="">
+            Continue with Google
+        </a>
+
+        <p class="signup-line">Don't have an account? <a id="switchToSignup">Sign up</a></p>
+    </div>
+</div>
+
+<div class="modal-overlay" id="signupOverlay">
+    <div class="auth-modal">
+        <button type="button" class="modal-close" data-close="signupOverlay"><i class="fa-solid fa-xmark"></i></button>
+
+        <h4>Create your account</h4>
+        <p class="sub">Join Sanza Library and start reading today.</p>
+
+        <form id="signupForm" method="POST" action="{% url 'signup' %}">
+            {% csrf_token %}
+            <div class="field">
+                <label for="signupFullname">Full name</label>
+                <div class="input-wrap">
+                    <i class="fa-solid fa-user"></i>
+                    <input type="text" name="fullname" id="signupFullname" placeholder="Your full name" required>
+                </div>
+            </div>
+
+            <div class="field">
+                <label for="signupEmail">Email address</label>
+                <div class="input-wrap">
+                    <i class="fa-solid fa-envelope"></i>
+                    <input type="email" name="email" id="signupEmail" placeholder="you@example.com" required>
+                </div>
+            </div>
+
+            <div class="field">
+                <label for="signupPassword1">Password</label>
+                <div class="input-wrap">
+                    <i class="fa-solid fa-lock"></i>
+                    <input type="password" name="password1" id="signupPassword1" placeholder="Create a password" required>
+                    <i class="fa-regular fa-eye toggle-pass" id="signupTogglePass1"></i>
+                </div>
+            </div>
+
+            <div class="field">
+                <label for="signupPassword2">Confirm password</label>
+                <div class="input-wrap">
+                    <i class="fa-solid fa-lock"></i>
+                    <input type="password" name="password2" id="signupPassword2" placeholder="Re-enter your password" required>
+                    <i class="fa-regular fa-eye toggle-pass" id="signupTogglePass2"></i>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-submit">Sign Up</button>
+        </form>
+
+        <p class="signup-line">Already have an account? <a id="switchToLogin">Log in</a></p>
+    </div>
+</div>
+
+{% endif %}
+
+<!-- ===================== PAGE CONTENT ===================== -->
+<main>
+{% block content %}
+{% endblock %}
+</main>
+
+<!-- ===================== FOOTER ===================== -->
+<footer class="site-footer">
+  <div class="footer-inner">
+
+    <div class="footer-col">
+      <div class="footer-brand-row">
+        <div class="footer-logo-icon">📖</div>
+        <div class="footer-brand-name">Sanza Library</div>
+      </div>
+      <p class="footer-tagline">Read. Learn. Grow.</p>
+      <p class="footer-desc">Thousands of free titles, no sign-up needed. Explore, discover, and download your next great read.</p>
+    </div>
+
+    <div class="footer-col">
+      <h4>Explore</h4>
+      <ul>
+        <li><a href="{% url 'home' %}">Home</a></li>
+        <li><a href="{% url 'books' %}">Books</a></li>
+        <li><a href="{% url 'category_home' %}">Categories</a></li>
+        <li><a href="{% url 'my_library' %}">My Library</a></li>
+      </ul>
+    </div>
+
+    <div class="footer-col">
+      <h4>Company</h4>
+      <ul>
+        <li><a href="{% url 'about' %}">About Us</a></li>
+        <li><a href="{% url 'contact' %}">Contact</a></li>
+        <li><a href="{% url 'privacy_policy' %}">Privacy Policy</a></li>
+        <li><a href="{% url 'terms_of_service' %}">Terms of Service</a></li>
+        <li><a href="{% url 'faq' %}">FAQ</a></li>
+      </ul>
+    </div>
+
+    <div class="footer-col newsletter">
+      <h4>Stay Updated</h4>
+      <p>Get new releases and reading picks in your inbox, once a week.</p>
+      <form class="newsletter-form" method="post" action="#">
+        {% csrf_token %}
+        <input type="email" name="email" placeholder="Enter your email" required>
+        <button type="submit">Subscribe</button>
+      </form>
+      <p class="newsletter-note">No spam. Unsubscribe anytime.</p>
+    </div>
+
+  </div>
+  <div id="toast" class="toast-notification">
+    <span id="toast-message"> Added to your library!</span>
+  </div>
+
+  <div class="footer-bottom">
+    <span>© 2026 Sanza Library. All rights reserved.</span>
+    <div class="footer-bottom-links">
+      <a href="#">Privacy</a>
+      <a href="#">Terms</a>
+      <a href="#">Cookies</a>
+      <a href="#">Sitemap</a>
+    </div>
+  </div>
+</footer>
+<!-- ===================== PAGE CONTENT ===================== -->
+
+{% block extra_js %}
+<script>
+/* ===================== AUTH: modal open/close ===================== */
+function openModal(id){
+    const el = document.getElementById(id);
+    if(el) el.classList.add('open');
+}
+function closeModal(id){
+    const el = document.getElementById(id);
+    if(el) el.classList.remove('open');
+}
+
+const loginBtn = document.getElementById('loginBtn');
+const signupBtn = document.getElementById('signupBtn');
+if(loginBtn) loginBtn.addEventListener('click', ()=> openModal('loginOverlay'));
+if(signupBtn) signupBtn.addEventListener('click', ()=> openModal('signupOverlay'));
+
+document.querySelectorAll('.modal-close').forEach(btn=>{
+    btn.addEventListener('click', ()=> closeModal(btn.dataset.close));
+});
+
+document.querySelectorAll('.modal-overlay').forEach(overlay=>{
+    overlay.addEventListener('click', (e)=>{
+        if(e.target === overlay) overlay.classList.remove('open');
+    });
+});
+
+document.addEventListener('keydown', (e)=>{
+    if(e.key === 'Escape'){
+        document.querySelectorAll('.modal-overlay.open').forEach(o=> o.classList.remove('open'));
+    }
+});
+
+const switchToSignup = document.getElementById('switchToSignup');
+const switchToLogin = document.getElementById('switchToLogin');
+if(switchToSignup) switchToSignup.addEventListener('click', ()=>{
+    closeModal('loginOverlay');
+    openModal('signupOverlay');
+});
+if(switchToLogin) switchToLogin.addEventListener('click', ()=>{
+    closeModal('signupOverlay');
+    openModal('loginOverlay');
+});
+
+/* ===================== AUTH: password show/hide ===================== */
+function wireToggle(iconId, inputId){
+    const icon = document.getElementById(iconId);
+    const input = document.getElementById(inputId);
+    if(!icon || !input) return;
+    icon.addEventListener('click', ()=>{
+        const isPass = input.type === 'password';
+        input.type = isPass ? 'text' : 'password';
+        icon.classList.toggle('fa-eye');
+        icon.classList.toggle('fa-eye-slash');
+    });
+}
+wireToggle('loginTogglePass', 'loginPassword');
+wireToggle('signupTogglePass1', 'signupPassword1');
+wireToggle('signupTogglePass2', 'signupPassword2');
+
+/* ===================== AUTH: reopen modal after a Django redirect ===================== */
+(function reopenAuthModalFromQuery(){
+    const params = new URLSearchParams(window.location.search);
+    const auth = params.get('auth');
+    if(auth === 'login') openModal('loginOverlay');
+    if(auth === 'signup') openModal('signupOverlay');
+})();
+
+/* Toast helper */
+let toastTimer;
+function showToast(msg){
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(()=> toast.classList.remove('show'), 2200);
+}
+
+/* Navbar menu active state */
+document.querySelectorAll('.menu a').forEach(link=>{
+    link.addEventListener('click', e=>{
+        if(link.getAttribute('href') === '#'){
+            e.preventDefault();
+            showToast(link.textContent + ' page');
+        }
+        document.querySelectorAll('.menu a').forEach(a=>a.classList.remove('active'));
+        link.classList.add('active');
+    });
+});
+
+/* Navbar search */
+const navSearchInput = document.querySelector('.search-box input');
+const navSearchIcon = document.querySelector('.search-box i');
+if(navSearchInput && navSearchIcon){
+    navSearchIcon.addEventListener('click', ()=> runSearch(navSearchInput.value));
+    navSearchInput.addEventListener('keydown', e=>{ if(e.key==='Enter') runSearch(navSearchInput.value); });
+}
+
+function runSearch(query){
+    query = query.trim();
+    if(!query){ showToast('Type something to search'); return; }
+
+    const q = query.toLowerCase();
+    const cards = document.querySelectorAll('.book-card');
+    if(cards.length === 0){
+        showToast('Search available on the home page');
+        return;
+    }
+    let found = 0;
+    cards.forEach(card=>{
+        const titleEl = card.querySelector('h3');
+        const authorEl = card.querySelector('.author');
+        const title = titleEl ? titleEl.textContent.toLowerCase() : '';
+        const author = authorEl ? authorEl.textContent.toLowerCase() : '';
+        const match = title.includes(q) || author.includes(q);
+        card.style.display = match ? '' : 'none';
+        if(match) found++;
+    });
+
+    const booksSection = document.getElementById('books-section');
+    if(booksSection) booksSection.scrollIntoView({behavior:'smooth', block:'start'});
+
+    if(found === 0){
+        showToast('No books found for "' + query + '"');
+        cards.forEach(card=> card.style.display = '');
+    } else {
+        showToast(found + ' result(s) for "' + query + '"');
+    }
+}
+  const icons = {
+    new_arrival: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
+    due_soon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>',
+    recommended: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>',
+    returned: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>'
+  };
+  const tagLabels = { new_arrival: "New arrival", due_soon: "Due soon", recommended: "Recommended", returned: "Returned" };
+ 
+  let panelOpen = false;
+ 
+  function togglePanel() {
+    panelOpen = !panelOpen;
+    document.getElementById('panel').classList.toggle('open', panelOpen);
+    if (panelOpen) loadNotifications();
+  }
+ 
+  function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(";").shift();
+  }
+ 
+ 
+
+</script>
+{% endblock %}
+
+</body>
+</html>

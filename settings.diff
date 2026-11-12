@@ -1,0 +1,59 @@
+--- /home/claude/proj/E-library.2/E-library/ebook/settings.py	2026-11-03 06:57:04.000000000 +0000
++++ /home/claude/out/sanza-ec2-deploy/ebook/settings.py	2026-11-03 07:34:51.338378277 +0000
+@@ -12,7 +12,7 @@
+ import os
+ from pathlib import Path
+ 
+-from decouple import config
++from decouple import config, Csv
+ 
+ # Build paths inside the project like this: BASE_DIR / 'subdir'.
+ BASE_DIR = Path(__file__).resolve().parent.parent
+@@ -27,7 +27,8 @@
+ # SECURITY WARNING: don't run with debug turned on in production!
+ DEBUG = config('DEBUG', default=True, cast=bool)
+ 
+-ALLOWED_HOSTS = []
++ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=Csv())
++CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='', cast=Csv())
+ 
+ 
+ # Application definition
+@@ -151,6 +152,7 @@
+ # https://docs.djangoproject.com/en/6.0/howto/static-files/
+ STATIC_URL = '/static/'
+ STATICFILES_DIRS = [BASE_DIR / 'static']
++STATIC_ROOT = BASE_DIR / 'staticfiles'   # collectstatic output, nginx serves this
+ 
+ MEDIA_URL = '/media/'
+ MEDIA_ROOT = BASE_DIR / 'media'
+@@ -172,7 +174,6 @@
+ 
+ RAZORPAY_KEY_ID = config('RAZORPAY_KEY_ID')
+ RAZORPAY_KEY_SECRET = config('RAZORPAY_KEY_SECRET')
+-DEBUG = True
+ 
+ SOCIALACCOUNT_LOGIN_ON_GET = True
+ 
+@@ -181,3 +182,21 @@
+ SOCIALACCOUNT_ADAPTER = 'book.adapters.CustomSocialAccountAdapter'
+ 
+ 
++# ---------------------------------------------------------------
++# Production security (active only when DEBUG=False)
++# ---------------------------------------------------------------
++if not DEBUG:
++    USE_HTTPS = config('USE_HTTPS', default=True, cast=bool)
++    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')  # nginx sets this header
++    SESSION_COOKIE_SECURE = USE_HTTPS
++    CSRF_COOKIE_SECURE = USE_HTTPS
++    SECURE_SSL_REDIRECT = False        # nginx handles http -> https redirect
++    SECURE_CONTENT_TYPE_NOSNIFF = True
++    ACCOUNT_DEFAULT_HTTP_PROTOCOL = 'https' if USE_HTTPS else 'http'  # allauth callback URLs
++
++LOGGING = {
++    'version': 1,
++    'disable_existing_loggers': False,
++    'handlers': {'console': {'class': 'logging.StreamHandler'}},
++    'root': {'handlers': ['console'], 'level': 'WARNING'},
++}
